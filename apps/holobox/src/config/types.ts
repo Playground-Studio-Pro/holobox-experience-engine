@@ -32,6 +32,10 @@ export interface MotionProfile {
   slowMotionScale: number
 }
 
+export interface InteractionConfig {
+  focusTimeoutMs: number
+}
+
 export interface ProjectConfig {
   experience: string
   version: string
@@ -40,4 +44,5 @@ export interface ProjectConfig {
   orbit: OrbitConfig
   theme?: ThemeConfig
   motion?: MotionProfile
+  interaction?: InteractionConfig
 }

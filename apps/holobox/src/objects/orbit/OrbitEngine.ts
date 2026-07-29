@@ -57,6 +57,10 @@ export class OrbitEngine {
    * Smoothly transition between full speed and slow motion.
    * Call setSlowMotion(true) on touch start, false on touch end.
    */
+  getItems(): OrbitItem[] {
+    return [...this.items]
+  }
+
   setSlowMotion(active: boolean): void {
     this.targetSpeedMultiplier = active ? this.config.slowMotionScale : 1.0
   }

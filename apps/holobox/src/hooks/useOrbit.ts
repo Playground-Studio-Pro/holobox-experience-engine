@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Ticker } from 'pixi.js'
 import { OrbitEngine } from '@/objects/orbit'
 import type { Scene } from '@/scene'
@@ -11,6 +11,7 @@ export function useOrbit(
   sceneReady: boolean,
 ) {
   const engineRef = useRef<OrbitEngine | null>(null)
+  const [orbitReady, setOrbitReady] = useState(false)
 
   useEffect(() => {
     const renderer = rendererRef.current
@@ -38,13 +39,15 @@ export function useOrbit(
 
     const onTick = (ticker: Ticker) => engine.update(ticker)
     renderer.ticker.add(onTick)
+    setOrbitReady(true)
 
     return () => {
       renderer.ticker.remove(onTick)
       engine.destroy()
       engineRef.current = null
+      setOrbitReady(false)
     }
   }, [rendererRef, sceneRef, sceneReady])
 
-  return engineRef
+  return { engineRef, orbitReady }
 }

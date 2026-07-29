@@ -32,4 +32,7 @@ export const DEFAULT_CONFIG: ProjectConfig = {
     floatFrequency: 0.4,
     slowMotionScale: 0.15,
   },
+  interaction: {
+    focusTimeoutMs: 5000,
+  },
 }

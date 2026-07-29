@@ -1,5 +1,7 @@
 import type { InteractionState } from '@/types'
 
+export { InteractionEngine } from './InteractionEngine'
+
 export interface InteractionEvent {
   type: 'tap' | 'hold' | 'swipe' | 'release'
   targetId: string | null
