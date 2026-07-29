@@ -18,8 +18,8 @@ export class PhotoItem extends OrbitItem {
 
     const card = new Graphics()
     card.roundRect(-hw, -hh, W, H, RADIUS)
-    card.fill({ color: 0xffffff, alpha: 0.1 })
-    card.stroke({ color: 0xffffff, width: 1.5, alpha: 0.35 })
+    card.fill({ color: 0x0d0d1a, alpha: 0.78 })
+    card.stroke({ color: 0xffffff, width: 2, alpha: 0.65 })
 
     this.container.addChild(card)
   }
