@@ -30,7 +30,9 @@ export function useOrbit(
       floatAmplitude: motion?.floatAmplitude ?? 8,
       floatFrequency: motion?.floatFrequency ?? 0.4,
       slowMotionScale: motion?.slowMotionScale ?? 0.15,
+      showCardFooter: orbit.showCardFooter ?? true,
       center: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 },
+      players: assets?.players ?? [],
       photos: assets?.photos ?? [],
     })
 

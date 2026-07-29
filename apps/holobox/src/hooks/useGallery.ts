@@ -1,14 +1,14 @@
 import { useEffect } from 'react'
-import { GalleryModule } from '@/objects/gallery'
+import { FocusView } from '@/objects/focus'
+import { GridGallery } from '@/objects/gallery'
 import type { SceneStateMachine } from '@/interactions'
-import type { OrbitItem } from '@/objects/orbit'
 import type { Scene } from '@/scene'
 import type { ProjectConfig } from '@/config/types'
 
 export function useGallery(
   sceneRef: React.RefObject<Scene | null>,
   machineRef: React.RefObject<SceneStateMachine | null>,
-  focusedItemRef: React.RefObject<OrbitItem | null>,
+  focusedIndexRef: React.RefObject<number>,
   orbitReady: boolean,
   config: ProjectConfig,
 ) {
@@ -17,29 +17,42 @@ export function useGallery(
     const machine = machineRef.current
     if (!orbitReady || !scene || !machine) return
 
-    const galleryConfig = config.gallery ?? { targetX: 540, targetY: 380, targetScale: 3.0 }
-    const timeoutMs = config.interaction?.focusTimeoutMs ?? 5000
+    const players = config.assets?.players ?? []
+    const uiLayer = scene.getLayer('ui')
 
-    const gallery = new GalleryModule(galleryConfig, timeoutMs, () => machine.transition('idle'))
+    const focusView = new FocusView(
+      players,
+      () => machine.transition('idle'),
+      () => machine.transition('gallery'),
+    )
+
+    const gridGallery = new GridGallery(
+      players,
+      (index) => {
+        focusedIndexRef.current = index
+        machine.transition('focused')
+      },
+      () => machine.transition('idle'),
+    )
 
     const unsubscribe = machine.subscribe((to, from) => {
-      if (to === 'gallery') {
-        const item = focusedItemRef.current
-        if (!item) return
-        gallery.open(
-          item,
-          scene.getLayer('ui'),
-          scene.getLayer('orbitBack'),
-          scene.getLayer('orbitFront'),
-        )
-      } else if (to === 'idle' && from === 'gallery') {
-        gallery.close()
+      if (to === 'focused') {
+        gridGallery.close()
+        const switchingPlayer = from === 'focused'
+        focusView.show(focusedIndexRef.current, uiLayer, switchingPlayer)
+      } else if (to === 'gallery') {
+        focusView.hide()
+        gridGallery.open(uiLayer)
+      } else if (to === 'idle') {
+        focusView.hide()
+        gridGallery.close()
       }
     })
 
     return () => {
       unsubscribe()
-      gallery.destroy()
+      focusView.destroy()
+      gridGallery.destroy()
     }
-  }, [sceneRef, machineRef, focusedItemRef, orbitReady])
+  }, [sceneRef, machineRef, focusedIndexRef, orbitReady])
 }

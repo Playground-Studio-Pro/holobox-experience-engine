@@ -7,7 +7,6 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
 export class InteractionEngine {
   private focusedItem: OrbitItem | null = null
-  private timeoutHandle: ReturnType<typeof setTimeout> | null = null
   private unsubscribe: (() => void) | null = null
 
   constructor(
@@ -16,8 +15,8 @@ export class InteractionEngine {
     private readonly stage: Container,
     private readonly machine: SceneStateMachine,
     private readonly config: InteractionConfig,
-    /** Mutable slot so Gallery (and other modules) can read which item is focused */
     private readonly focusedItemSlot: { current: OrbitItem | null },
+    private readonly focusedIndexSlot: { current: number },
   ) {}
 
   mount(): void {
@@ -25,16 +24,17 @@ export class InteractionEngine {
     this.stage.hitArea = new Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
     this.stage.on('pointerdown', this.onStageTap, this)
 
-    for (const item of this.items) {
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items[i]
+      const index = i
       item.container.eventMode = 'static'
       item.container.cursor = 'pointer'
       item.container.on('pointerdown', (e: FederatedPointerEvent) => {
         e.stopPropagation()
-        this.onItemTap(item)
+        this.onItemTap(item, index)
       })
     }
 
-    // When any actor drives machine → idle, this engine owns orbit/focus cleanup
     this.unsubscribe = this.machine.subscribe((to) => {
       if (to === 'idle') this.applyIdle()
     })
@@ -42,7 +42,6 @@ export class InteractionEngine {
 
   destroy(): void {
     this.unsubscribe?.()
-    this.clearTimeout()
     this.stage.off('pointerdown', this.onStageTap, this)
 
     for (const item of this.items) {
@@ -51,21 +50,20 @@ export class InteractionEngine {
     }
   }
 
-  private onItemTap(item: OrbitItem): void {
-    if (this.focusedItem === item && this.machine.state === 'focused') {
-      // Focused item tapped again — enter Gallery
-      this.clearTimeout()
-      this.machine.transition('gallery')
-      return
-    }
+  private onItemTap(item: OrbitItem, index: number): void {
+    const state = this.machine.state
+    // Gallery owns its own interaction — orbit items ignored while gallery is open
+    if (state === 'gallery') return
 
-    if (this.focusedItem) {
+    if (this.focusedItem && this.focusedItem !== item) {
       this.focusedItem.unfocus()
       this.focusedItem.dim()
     }
 
     this.focusedItem = item
     this.focusedItemSlot.current = item
+    this.focusedIndexSlot.current = index
+
     item.focus()
     item.undim()
 
@@ -73,53 +71,29 @@ export class InteractionEngine {
       if (other !== item) other.dim()
     }
 
-    if (this.machine.state !== 'focused') {
-      this.orbitEngine.setSlowMotion(true)
-    }
-
+    this.orbitEngine.setSlowMotion(true)
+    // From idle → focused; from focused → focused (self-transition, switches player in FocusView)
     this.machine.transition('focused')
-    this.resetTimeout()
   }
 
   private onStageTap = (_e: FederatedPointerEvent): void => {
+    // FocusView's backdrop handles closing while focused.
+    // Stage tap only fires when nothing in FocusView captured the event (i.e., outside FocusView).
     if (this.machine.state === 'focused') {
-      this.returnToIdle()
+      this.machine.transition('idle')
     }
-    // In gallery state, GalleryModule owns the close gesture
   }
 
-  private returnToIdle(): void {
-    if (this.machine.state === 'idle') return
-    this.applyIdle()
-    this.machine.transition('idle')
-  }
-
-  // Idempotent — called both by returnToIdle() and by the machine subscription
   private applyIdle(): void {
-    this.clearTimeout()
     if (this.focusedItem) {
-      // Don't unfocus while Gallery animation is in flight — Gallery.close() handles it
-      if (!this.focusedItem.isDetached) {
-        this.focusedItem.unfocus()
-      }
+      this.focusedItem.unfocus()
       this.focusedItem = null
       this.focusedItemSlot.current = null
     }
+    this.focusedIndexSlot.current = -1
     for (const item of this.items) {
       item.undim()
     }
     this.orbitEngine.setSlowMotion(false)
-  }
-
-  private resetTimeout(): void {
-    this.clearTimeout()
-    this.timeoutHandle = setTimeout(() => this.returnToIdle(), this.config.focusTimeoutMs)
-  }
-
-  private clearTimeout(): void {
-    if (this.timeoutHandle !== null) {
-      clearTimeout(this.timeoutHandle)
-      this.timeoutHandle = null
-    }
   }
 }

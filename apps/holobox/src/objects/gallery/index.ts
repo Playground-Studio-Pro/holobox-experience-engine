@@ -1,1 +1,1 @@
-export { GalleryModule } from './GalleryModule'
+export { GridGallery } from './GridGallery'

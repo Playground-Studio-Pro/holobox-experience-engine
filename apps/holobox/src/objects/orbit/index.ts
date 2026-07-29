@@ -1,3 +1,4 @@
 export { OrbitEngine } from './OrbitEngine'
 export { OrbitItem } from './OrbitItem'
-export type { OrbitEngineConfig, OrbitLayer } from './types'
+export { PlayerCard } from './items/PlayerCard'
+export type { OrbitEngineConfig, OrbitLayer, PlayerData } from './types'

@@ -4,8 +4,8 @@ export type TransitionHandler = (to: SceneState, from: SceneState) => void
 
 const VALID_TRANSITIONS: Record<SceneState, SceneState[]> = {
   idle: ['focused'],
-  focused: ['idle', 'gallery'],
-  gallery: ['idle'],
+  focused: ['idle', 'gallery', 'focused'],
+  gallery: ['idle', 'focused'],
 }
 
 export class SceneStateMachine {

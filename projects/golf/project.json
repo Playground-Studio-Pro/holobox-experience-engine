@@ -5,15 +5,16 @@
   "centerpiece": {
     "mode": "physical",
     "dev": {
-      "showPlaceholder": true,
+      "showPlaceholder": false,
       "showGlorifier": true,
-      "showSafeZone": true
+      "showSafeZone": false
     }
   },
   "orbit": {
     "itemCount": 8,
     "ellipseX": 420,
-    "ellipseY": 280
+    "ellipseY": 280,
+    "showCardFooter": false
   },
   "theme": {
     "primaryColor": "#ffffff",
@@ -32,9 +33,28 @@
   "gallery": {
     "targetX": 540,
     "targetY": 380,
-    "targetScale": 3.0
+    "targetScale": 3.0,
+    "closeButtonY": 730
   },
   "assets": {
-    "photos": []
+    "photos": [],
+    "players": [
+      { "photoUrl": "/assets/photos/golf-01.jpg" },
+      { "photoUrl": "/assets/photos/golf-02.jpg" },
+      { "photoUrl": "/assets/photos/golf-03.jpg" },
+      { "photoUrl": "/assets/photos/golf-04.jpg" },
+      { "photoUrl": "/assets/photos/golf-05.jpg" },
+      { "photoUrl": "/assets/photos/golf-06.jpg" },
+      { "photoUrl": "/assets/photos/golf-07.jpg" },
+      { "photoUrl": "/assets/photos/golf-08.jpg" },
+      { "photoUrl": "/assets/photos/golf-09.jpg" },
+      { "photoUrl": "/assets/photos/golf-10.jpg" },
+      { "photoUrl": "/assets/photos/golf-11.jpg" },
+      { "photoUrl": "/assets/photos/golf-12.jpg" },
+      { "photoUrl": "/assets/photos/golf-13.jpg" },
+      { "photoUrl": "/assets/photos/golf-14.jpg" },
+      { "photoUrl": "/assets/photos/golf-15.jpg" },
+      { "photoUrl": "/assets/photos/golf-16.jpg" }
+    ]
   }
 }

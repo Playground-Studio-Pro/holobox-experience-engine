@@ -18,8 +18,8 @@ export default function Experience({ config }: Props) {
   const { sceneRef, sceneReady } = useScene(rendererRef, ready)
   useCenterPiece(sceneRef, sceneReady, config.centerpiece)
   const { engineRef: orbitEngineRef, orbitReady } = useOrbit(rendererRef, sceneRef, sceneReady, config)
-  const { machineRef, focusedItemRef } = useInteraction(rendererRef, orbitEngineRef, orbitReady, config)
-  useGallery(sceneRef, machineRef, focusedItemRef, orbitReady, config)
+  const { machineRef, focusedIndexRef } = useInteraction(rendererRef, orbitEngineRef, orbitReady, config)
+  useGallery(sceneRef, machineRef, focusedIndexRef, orbitReady, config)
 
   return <div id="holobox-root" ref={containerRef} />
 }

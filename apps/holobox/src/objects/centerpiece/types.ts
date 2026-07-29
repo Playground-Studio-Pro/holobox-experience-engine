@@ -15,6 +15,7 @@ export interface CenterPieceDevConfig {
 
 export interface CenterPieceConfig {
   mode: CenterPieceMode
+  model?: string
   position?: Vec2
   exclusionZone?: Partial<ExclusionZone>
   dev?: Partial<CenterPieceDevConfig>
@@ -22,6 +23,7 @@ export interface CenterPieceConfig {
 
 export interface ResolvedCenterPieceConfig {
   mode: CenterPieceMode
+  model: string | null
   position: Vec2
   exclusionZone: ExclusionZone
   dev: CenterPieceDevConfig

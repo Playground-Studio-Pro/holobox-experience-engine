@@ -1,8 +1,8 @@
 import { Assets } from 'pixi.js'
 import type { Container, Ticker, Texture } from 'pixi.js'
 import { lerp } from '@/utils'
-import { PhotoItem } from './items/PhotoItem'
-import type { OrbitEngineConfig, OrbitLayer } from './types'
+import { PlayerCard } from './items/PlayerCard'
+import type { OrbitEngineConfig, OrbitLayer, PlayerData } from './types'
 import type { OrbitItem } from './OrbitItem'
 
 const TWO_PI = Math.PI * 2
@@ -35,22 +35,33 @@ export class OrbitEngine {
     this.backLayer = backLayer
     this.frontLayer = frontLayer
 
-    const textures = await this.loadTextures(this.config.photos ?? [])
+    const players = this.config.players ?? []
+    const usePlayers = players.length > 0
+
+    // Load textures — prefer player photoUrls, fall back to flat photos array.
+    // Player textures are nullable: index N corresponds to players[N], null means no photo.
+    const playerTextures = usePlayers ? await this.loadPlayerTextures(players) : []
+    const legacyTextures = !usePlayers ? await this.loadTextures(this.config.photos ?? []) : []
+
     const angleStep = TWO_PI / this.config.itemCount
 
     for (let i = 0; i < this.config.itemCount; i++) {
       const angle = angleStep * i
-      const item = new PhotoItem()
+      const playerData = usePlayers ? players[i % players.length] : undefined
+      const card = new PlayerCard(playerData, this.config.showCardFooter ?? true)
 
-      if (textures.length > 0) {
-        item.setTexture(textures[i % textures.length])
+      if (usePlayers) {
+        const tex = playerTextures[i % players.length] ?? null
+        if (tex) card.setTexture(tex)
+      } else if (legacyTextures.length > 0) {
+        card.setTexture(legacyTextures[i % legacyTextures.length])
       }
 
       const layer = this.layerFor(Math.sin(angle))
-      item.currentLayer = layer
-      this.layerContainer(layer).addChild(item.container)
+      card.currentLayer = layer
+      this.layerContainer(layer).addChild(card.container)
 
-      this.items.push(item)
+      this.items.push(card)
       this.angles.push(angle)
       // Spread float phases so items never all bob in sync
       this.floatPhases.push((i / this.config.itemCount) * TWO_PI)
@@ -108,6 +119,21 @@ export class OrbitEngine {
       console.warn('[OrbitEngine] Failed to load photo textures', err)
       return []
     }
+  }
+
+  // Returns one entry per player — null where photoUrl is absent or fails to load.
+  private async loadPlayerTextures(players: PlayerData[]): Promise<(Texture | null)[]> {
+    return Promise.all(
+      players.map(async (p) => {
+        if (!p.photoUrl) return null
+        try {
+          return await Assets.load<Texture>(p.photoUrl)
+        } catch (err) {
+          console.warn('[OrbitEngine] Failed to load player texture', p.photoUrl, err)
+          return null
+        }
+      }),
+    )
   }
 
   private applyPositions(): void {

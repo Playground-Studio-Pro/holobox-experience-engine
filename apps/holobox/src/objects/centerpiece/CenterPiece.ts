@@ -15,6 +15,7 @@ import type {
 
 const DEFAULTS: ResolvedCenterPieceConfig = {
   mode: 'physical',
+  model: null,
   position: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 },
   exclusionZone: { width: 400, height: 500 },
   dev: {
@@ -69,6 +70,7 @@ export class CenterPiece {
   private resolve(config: CenterPieceConfig): ResolvedCenterPieceConfig {
     return {
       mode: config.mode,
+      model: config.model ?? DEFAULTS.model,
       position: config.position ?? DEFAULTS.position,
       exclusionZone: {
         width: config.exclusionZone?.width ?? DEFAULTS.exclusionZone.width,

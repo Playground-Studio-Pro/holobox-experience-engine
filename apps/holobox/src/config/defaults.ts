@@ -20,6 +20,7 @@ export const DEFAULT_CONFIG: ProjectConfig = {
     itemCount: 8,
     ellipseX: 420,
     ellipseY: 280,
+    showCardFooter: true,
   },
   theme: {
     primaryColor: '#ffffff',
@@ -39,8 +40,10 @@ export const DEFAULT_CONFIG: ProjectConfig = {
     targetX: CANVAS_WIDTH / 2,
     targetY: 380,
     targetScale: 3.0,
+    closeButtonY: 730,
   },
   assets: {
     photos: [],
+    players: [],
   },
 }

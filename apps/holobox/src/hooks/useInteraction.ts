@@ -13,6 +13,7 @@ export function useInteraction(
 ) {
   const machineRef = useRef<SceneStateMachine | null>(null)
   const focusedItemRef = useRef<OrbitItem | null>(null)
+  const focusedIndexRef = useRef<number>(-1)
 
   useEffect(() => {
     const renderer = rendererRef.current
@@ -31,6 +32,7 @@ export function useInteraction(
       machine,
       interactionConfig,
       focusedItemRef,
+      focusedIndexRef,
     )
 
     engine.mount()
@@ -40,8 +42,9 @@ export function useInteraction(
       machine.reset()
       machineRef.current = null
       focusedItemRef.current = null
+      focusedIndexRef.current = -1
     }
   }, [rendererRef, orbitEngineRef, orbitReady])
 
-  return { machineRef, focusedItemRef }
+  return { machineRef, focusedItemRef, focusedIndexRef }
 }
