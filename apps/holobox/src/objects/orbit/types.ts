@@ -13,4 +13,5 @@ export interface OrbitEngineConfig {
   floatAmplitude: number
   floatFrequency: number
   slowMotionScale: number
+  photos?: string[]
 }

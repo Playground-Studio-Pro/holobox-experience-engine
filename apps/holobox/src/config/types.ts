@@ -42,6 +42,10 @@ export interface GalleryConfig {
   targetScale: number
 }
 
+export interface AssetsConfig {
+  photos: string[]
+}
+
 export interface ProjectConfig {
   experience: string
   version: string
@@ -52,4 +56,5 @@ export interface ProjectConfig {
   motion?: MotionProfile
   interaction?: InteractionConfig
   gallery?: GalleryConfig
+  assets?: AssetsConfig
 }

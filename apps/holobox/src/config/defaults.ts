@@ -40,4 +40,7 @@ export const DEFAULT_CONFIG: ProjectConfig = {
     targetY: 380,
     targetScale: 3.0,
   },
+  assets: {
+    photos: [],
+  },
 }

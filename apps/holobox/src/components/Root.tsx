@@ -1,22 +1,17 @@
-import { useRef } from 'react'
-import { useRenderer } from '@/hooks/useRenderer'
-import { useScene } from '@/hooks/useScene'
-import { useCenterPiece } from '@/hooks/useCenterPiece'
-import { useOrbit } from '@/hooks/useOrbit'
-import { useInteraction } from '@/hooks/useInteraction'
-import { useGallery } from '@/hooks/useGallery'
-import { DEFAULT_CONFIG } from '@/config/defaults'
+import { useState, useEffect } from 'react'
+import { ProjectLoader } from '@/core/ProjectLoader'
+import type { ProjectConfig } from '@/config/types'
+import Experience from './Experience'
 import './styles.css'
 
 export default function Root() {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [config, setConfig] = useState<ProjectConfig | null>(null)
 
-  const { rendererRef, ready } = useRenderer(containerRef)
-  const { sceneRef, sceneReady } = useScene(rendererRef, ready)
-  useCenterPiece(sceneRef, sceneReady, DEFAULT_CONFIG.centerpiece)
-  const { engineRef: orbitEngineRef, orbitReady } = useOrbit(rendererRef, sceneRef, sceneReady)
-  const { machineRef, focusedItemRef } = useInteraction(rendererRef, orbitEngineRef, orbitReady)
-  useGallery(sceneRef, machineRef, focusedItemRef, orbitReady)
+  useEffect(() => {
+    ProjectLoader.load().then(setConfig)
+  }, [])
 
-  return <div id="holobox-root" ref={containerRef} />
+  if (!config) return null
+
+  return <Experience config={config} />
 }

@@ -3,12 +3,13 @@ import { InteractionEngine, SceneStateMachine } from '@/interactions'
 import type { OrbitItem } from '@/objects/orbit'
 import type { OrbitEngine } from '@/objects/orbit'
 import type { Renderer } from '@/renderer'
-import { DEFAULT_CONFIG } from '@/config/defaults'
+import type { ProjectConfig } from '@/config/types'
 
 export function useInteraction(
   rendererRef: React.RefObject<Renderer | null>,
   orbitEngineRef: React.RefObject<OrbitEngine | null>,
   orbitReady: boolean,
+  config: ProjectConfig,
 ) {
   const machineRef = useRef<SceneStateMachine | null>(null)
   const focusedItemRef = useRef<OrbitItem | null>(null)
@@ -18,7 +19,7 @@ export function useInteraction(
     const orbitEngine = orbitEngineRef.current
     if (!orbitReady || !renderer || !orbitEngine) return
 
-    const config = DEFAULT_CONFIG.interaction ?? { focusTimeoutMs: 5000 }
+    const interactionConfig = config.interaction ?? { focusTimeoutMs: 5000 }
 
     const machine = new SceneStateMachine()
     machineRef.current = machine
@@ -28,7 +29,7 @@ export function useInteraction(
       orbitEngine,
       renderer.app.stage,
       machine,
-      config,
+      interactionConfig,
       focusedItemRef,
     )
 

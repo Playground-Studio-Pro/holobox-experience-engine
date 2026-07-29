@@ -1,4 +1,5 @@
-import type { Container, Ticker } from 'pixi.js'
+import { Assets } from 'pixi.js'
+import type { Container, Ticker, Texture } from 'pixi.js'
 import { lerp } from '@/utils'
 import { PhotoItem } from './items/PhotoItem'
 import type { OrbitEngineConfig, OrbitLayer } from './types'
@@ -30,17 +31,22 @@ export class OrbitEngine {
     this.config = config
   }
 
-  mount(backLayer: Container, frontLayer: Container): void {
+  async mount(backLayer: Container, frontLayer: Container): Promise<void> {
     this.backLayer = backLayer
     this.frontLayer = frontLayer
 
+    const textures = await this.loadTextures(this.config.photos ?? [])
     const angleStep = TWO_PI / this.config.itemCount
 
     for (let i = 0; i < this.config.itemCount; i++) {
       const angle = angleStep * i
       const item = new PhotoItem()
-      const layer = this.layerFor(Math.sin(angle))
 
+      if (textures.length > 0) {
+        item.setTexture(textures[i % textures.length])
+      }
+
+      const layer = this.layerFor(Math.sin(angle))
       item.currentLayer = layer
       this.layerContainer(layer).addChild(item.container)
 
@@ -53,14 +59,14 @@ export class OrbitEngine {
     this.applyPositions()
   }
 
-  /**
-   * Smoothly transition between full speed and slow motion.
-   * Call setSlowMotion(true) on touch start, false on touch end.
-   */
   getItems(): OrbitItem[] {
     return [...this.items]
   }
 
+  /**
+   * Smoothly transition between full speed and slow motion.
+   * Call setSlowMotion(true) on touch start, false on touch end.
+   */
   setSlowMotion(active: boolean): void {
     this.targetSpeedMultiplier = active ? this.config.slowMotionScale : 1.0
   }
@@ -94,6 +100,16 @@ export class OrbitEngine {
     this.frontLayer = null
   }
 
+  private async loadTextures(photos: string[]): Promise<Texture[]> {
+    if (photos.length === 0) return []
+    try {
+      return await Promise.all(photos.map((url) => Assets.load<Texture>(url)))
+    } catch (err) {
+      console.warn('[OrbitEngine] Failed to load photo textures', err)
+      return []
+    }
+  }
+
   private applyPositions(): void {
     const { center, ellipseX, ellipseY, floatAmplitude, floatFrequency } = this.config
 
@@ -102,7 +118,8 @@ export class OrbitEngine {
       const angle = this.angles[i]
       const sinA = Math.sin(angle)
 
-      const floatY = floatAmplitude * Math.sin(this.elapsedSeconds * floatFrequency + this.floatPhases[i])
+      const floatY =
+        floatAmplitude * Math.sin(this.elapsedSeconds * floatFrequency + this.floatPhases[i])
       const t = (sinA + 1) / 2
 
       // Always track — Gallery uses these to animate the item back to orbit

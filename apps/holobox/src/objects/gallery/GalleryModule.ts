@@ -50,6 +50,9 @@ export class GalleryModule {
       overwrite: true,
     })
 
+    // Glow fades over the same duration the card travels — peaks just before movement
+    item.fadeGlowForGallery(0.65)
+
     this.startTimeout()
   }
 

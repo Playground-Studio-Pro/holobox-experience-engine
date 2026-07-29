@@ -28,7 +28,12 @@ export abstract class OrbitItem {
   }
 
   abstract focus(): void
-  abstract unfocus(): void
+  abstract unfocus(duration?: number): void
+
+  /** Called when transitioning to Gallery — fades glow while card travels. Default delegates to unfocus. */
+  fadeGlowForGallery(duration: number): void {
+    this.unfocus(duration)
+  }
 
   dim(): void {
     gsap.to(this.visual, { alpha: 0.28, duration: 0.4, ease: 'power2.out', overwrite: true })

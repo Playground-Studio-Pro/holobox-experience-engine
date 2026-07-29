@@ -3,27 +3,24 @@ import { GalleryModule } from '@/objects/gallery'
 import type { SceneStateMachine } from '@/interactions'
 import type { OrbitItem } from '@/objects/orbit'
 import type { Scene } from '@/scene'
-import { DEFAULT_CONFIG } from '@/config/defaults'
+import type { ProjectConfig } from '@/config/types'
 
 export function useGallery(
   sceneRef: React.RefObject<Scene | null>,
   machineRef: React.RefObject<SceneStateMachine | null>,
   focusedItemRef: React.RefObject<OrbitItem | null>,
   orbitReady: boolean,
+  config: ProjectConfig,
 ) {
   useEffect(() => {
     const scene = sceneRef.current
     const machine = machineRef.current
     if (!orbitReady || !scene || !machine) return
 
-    const galleryConfig = DEFAULT_CONFIG.gallery ?? { targetX: 540, targetY: 380, targetScale: 3.0 }
-    const timeoutMs = DEFAULT_CONFIG.interaction?.focusTimeoutMs ?? 5000
+    const galleryConfig = config.gallery ?? { targetX: 540, targetY: 380, targetScale: 3.0 }
+    const timeoutMs = config.interaction?.focusTimeoutMs ?? 5000
 
-    const gallery = new GalleryModule(
-      galleryConfig,
-      timeoutMs,
-      () => machine.transition('idle'),
-    )
+    const gallery = new GalleryModule(galleryConfig, timeoutMs, () => machine.transition('idle'))
 
     const unsubscribe = machine.subscribe((to, from) => {
       if (to === 'gallery') {
