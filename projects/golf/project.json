@@ -1,0 +1,19 @@
+{
+  "experience": "trophy-orbit",
+  "version": "0.1.0",
+  "name": "Golf Tournament 2026",
+  "centerpiece": {
+    "mode": "physical",
+    "showPlaceholder": true,
+    "showGlorifier": true,
+    "showSafeZone": true
+  },
+  "orbit": {
+    "itemCount": 8
+  },
+  "theme": {
+    "primaryColor": "#ffffff",
+    "accentColor": "#d4af37",
+    "backgroundColor": "#000000"
+  }
+}
