@@ -12,6 +12,15 @@ export abstract class OrbitItem {
 
   currentLayer: OrbitLayer = 'orbitBack'
 
+  /** When true, OrbitEngine skips updating this item's container — Gallery owns it */
+  isDetached = false
+
+  /** Last computed orbit position/scale/alpha — updated every frame even when detached */
+  orbitX = 0
+  orbitY = 0
+  orbitScale = 1
+  orbitAlpha = 1
+
   constructor() {
     this.container = new Container()
     this.visual = new Container()

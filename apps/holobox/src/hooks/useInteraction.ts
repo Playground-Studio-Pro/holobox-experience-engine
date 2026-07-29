@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { InteractionEngine, SceneStateMachine } from '@/interactions'
+import type { OrbitItem } from '@/objects/orbit'
 import type { OrbitEngine } from '@/objects/orbit'
 import type { Renderer } from '@/renderer'
 import { DEFAULT_CONFIG } from '@/config/defaults'
@@ -10,6 +11,7 @@ export function useInteraction(
   orbitReady: boolean,
 ) {
   const machineRef = useRef<SceneStateMachine | null>(null)
+  const focusedItemRef = useRef<OrbitItem | null>(null)
 
   useEffect(() => {
     const renderer = rendererRef.current
@@ -27,6 +29,7 @@ export function useInteraction(
       renderer.app.stage,
       machine,
       config,
+      focusedItemRef,
     )
 
     engine.mount()
@@ -35,8 +38,9 @@ export function useInteraction(
       engine.destroy()
       machine.reset()
       machineRef.current = null
+      focusedItemRef.current = null
     }
   }, [rendererRef, orbitEngineRef, orbitReady])
 
-  return { machineRef }
+  return { machineRef, focusedItemRef }
 }

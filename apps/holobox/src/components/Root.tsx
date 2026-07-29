@@ -15,8 +15,8 @@ export default function Root() {
   const { sceneRef, sceneReady } = useScene(rendererRef, ready)
   useCenterPiece(sceneRef, sceneReady, DEFAULT_CONFIG.centerpiece)
   const { engineRef: orbitEngineRef, orbitReady } = useOrbit(rendererRef, sceneRef, sceneReady)
-  const { machineRef } = useInteraction(rendererRef, orbitEngineRef, orbitReady)
-  useGallery(sceneRef, machineRef, orbitReady)
+  const { machineRef, focusedItemRef } = useInteraction(rendererRef, orbitEngineRef, orbitReady)
+  useGallery(sceneRef, machineRef, focusedItemRef, orbitReady)
 
   return <div id="holobox-root" ref={containerRef} />
 }

@@ -35,4 +35,9 @@ export const DEFAULT_CONFIG: ProjectConfig = {
   interaction: {
     focusTimeoutMs: 5000,
   },
+  gallery: {
+    targetX: CANVAS_WIDTH / 2,
+    targetY: 380,
+    targetScale: 3.0,
+  },
 }

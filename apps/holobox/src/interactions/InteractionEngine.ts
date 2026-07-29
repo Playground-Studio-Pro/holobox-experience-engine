@@ -16,6 +16,8 @@ export class InteractionEngine {
     private readonly stage: Container,
     private readonly machine: SceneStateMachine,
     private readonly config: InteractionConfig,
+    /** Mutable slot so Gallery (and other modules) can read which item is focused */
+    private readonly focusedItemSlot: { current: OrbitItem | null },
   ) {}
 
   mount(): void {
@@ -32,8 +34,7 @@ export class InteractionEngine {
       })
     }
 
-    // When any external actor (Gallery timeout, etc.) drives machine → idle,
-    // this engine still owns the orbit and focus visual cleanup.
+    // When any actor drives machine → idle, this engine owns orbit/focus cleanup
     this.unsubscribe = this.machine.subscribe((to) => {
       if (to === 'idle') this.applyIdle()
     })
@@ -52,7 +53,7 @@ export class InteractionEngine {
 
   private onItemTap(item: OrbitItem): void {
     if (this.focusedItem === item && this.machine.state === 'focused') {
-      // Focused item tapped again — open Gallery
+      // Focused item tapped again — enter Gallery
       this.clearTimeout()
       this.machine.transition('gallery')
       return
@@ -64,6 +65,7 @@ export class InteractionEngine {
     }
 
     this.focusedItem = item
+    this.focusedItemSlot.current = item
     item.focus()
     item.undim()
 
@@ -83,7 +85,7 @@ export class InteractionEngine {
     if (this.machine.state === 'focused') {
       this.returnToIdle()
     }
-    // If state === 'gallery', the GalleryModule's overlay handles the tap
+    // In gallery state, GalleryModule owns the close gesture
   }
 
   private returnToIdle(): void {
@@ -92,12 +94,16 @@ export class InteractionEngine {
     this.machine.transition('idle')
   }
 
-  // Idempotent — safe to call from both returnToIdle() and the machine subscription
+  // Idempotent — called both by returnToIdle() and by the machine subscription
   private applyIdle(): void {
     this.clearTimeout()
     if (this.focusedItem) {
-      this.focusedItem.unfocus()
+      // Don't unfocus while Gallery animation is in flight — Gallery.close() handles it
+      if (!this.focusedItem.isDetached) {
+        this.focusedItem.unfocus()
+      }
       this.focusedItem = null
+      this.focusedItemSlot.current = null
     }
     for (const item of this.items) {
       item.undim()

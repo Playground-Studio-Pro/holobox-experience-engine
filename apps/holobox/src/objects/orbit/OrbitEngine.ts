@@ -103,13 +103,21 @@ export class OrbitEngine {
       const sinA = Math.sin(angle)
 
       const floatY = floatAmplitude * Math.sin(this.elapsedSeconds * floatFrequency + this.floatPhases[i])
-
-      item.container.x = center.x + ellipseX * Math.cos(angle)
-      item.container.y = center.y + ellipseY * sinA + floatY
-
       const t = (sinA + 1) / 2
-      item.container.scale.set(lerp(MIN_SCALE, MAX_SCALE, t))
-      item.container.alpha = lerp(MIN_ALPHA, MAX_ALPHA, t)
+
+      // Always track — Gallery uses these to animate the item back to orbit
+      item.orbitX = center.x + ellipseX * Math.cos(angle)
+      item.orbitY = center.y + ellipseY * sinA + floatY
+      item.orbitScale = lerp(MIN_SCALE, MAX_SCALE, t)
+      item.orbitAlpha = lerp(MIN_ALPHA, MAX_ALPHA, t)
+
+      // Gallery owns the container while detached — skip all writes
+      if (item.isDetached) continue
+
+      item.container.x = item.orbitX
+      item.container.y = item.orbitY
+      item.container.scale.set(item.orbitScale)
+      item.container.alpha = item.orbitAlpha
 
       const target = this.layerFor(sinA)
       if (item.currentLayer !== target) {

@@ -36,6 +36,12 @@ export interface InteractionConfig {
   focusTimeoutMs: number
 }
 
+export interface GalleryConfig {
+  targetX: number
+  targetY: number
+  targetScale: number
+}
+
 export interface ProjectConfig {
   experience: string
   version: string
@@ -45,4 +51,5 @@ export interface ProjectConfig {
   theme?: ThemeConfig
   motion?: MotionProfile
   interaction?: InteractionConfig
+  gallery?: GalleryConfig
 }
