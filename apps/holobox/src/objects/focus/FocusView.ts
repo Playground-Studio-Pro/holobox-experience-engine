@@ -33,7 +33,9 @@ const CLOSE_Y      = PANEL_Y + 30
 
 export class FocusView {
   private readonly root: Container
-  private readonly panel: Container
+  // visual holds purely decorative elements (backdrop, panel bg, photo, text).
+  // root stays at alpha=1 always so interactive controls are hittable immediately.
+  private readonly visual: Container
   private readonly photoContainer: Container
   private photoSprite: Sprite | null = null
   private readonly nameTxt: Text
@@ -47,58 +49,48 @@ export class FocusView {
   ) {
     this.root = new Container()
     this.root.label = 'focus:root'
-    this.root.alpha = 0
+    // root is always alpha=1 — interactive controls are hittable from the first frame.
+    // Only this.visual fades in/out for the visual transition.
 
-    // ── Backdrop — semi-transparent, orbit and centerpiece visible behind ──────
-    // Keep alpha low so the scene breathes underneath.
+    // ── Visual layer — all decorative elements; fades in/out ─────────────────
+    this.visual = new Container()
+    this.visual.alpha = 0
+    this.visual.eventMode = 'none'
+
+    // Backdrop shape (decorative semi-transparent fill)
     const backdropShape = new Graphics()
     backdropShape.rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
     backdropShape.fill({ color: 0x000205, alpha: 0.52 })
-    const backdrop = new Container()
-    backdrop.addChild(backdropShape)
-    backdrop.eventMode = 'static'
-    backdrop.cursor = 'default'
-    backdrop.on('pointerdown', () => this.onClose())
+    this.visual.addChild(backdropShape)
 
-    // ── Glass panel ────────────────────────────────────────────────────────────
-    // Semi-transparent dark panel — stops ALL propagation so touching the panel
-    // or any of its contents never reaches the backdrop's close handler.
-    this.panel = new Container()
-    this.panel.x = PANEL_X
-    this.panel.y = PANEL_Y
-    this.panel.eventMode = 'static'
-    this.panel.hitArea = new Rectangle(0, 0, PANEL_W, PANEL_H)
-    this.panel.on('pointerdown', (e) => e.stopPropagation())
+    // Panel background, edge highlight, border
+    const panelVisual = new Container()
+    panelVisual.x = PANEL_X
+    panelVisual.y = PANEL_Y
 
-    // Panel background — dark glass (navy, semi-transparent)
     const panelBg = new Graphics()
     panelBg.roundRect(0, 0, PANEL_W, PANEL_H, PANEL_RADIUS)
     panelBg.fill({ color: 0x03080f, alpha: 0.78 })
 
-    // Subtle top-edge highlight — simulates light catching glass surface
     const edgeHighlight = new Graphics()
     edgeHighlight.roundRect(1, 1, PANEL_W - 2, 2, PANEL_RADIUS)
     edgeHighlight.fill({ color: 0xffffff, alpha: 0.18 })
 
-    // Panel border — barely visible frame
     const panelBorder = new Graphics()
     panelBorder.roundRect(0, 0, PANEL_W, PANEL_H, PANEL_RADIUS)
     panelBorder.stroke({ color: 0xffffff, width: 1, alpha: 0.12 })
 
-    this.panel.addChild(panelBg, edgeHighlight, panelBorder)
+    panelVisual.addChild(panelBg, edgeHighlight, panelBorder)
+    this.visual.addChild(panelVisual)
 
-    // ── Photo container (local coords relative to canvas, not panel) ──────────
+    // ── Photo container (inside visual — fades with scene) ────────────────────
     this.photoContainer = new Container()
     this.photoContainer.x = PHOTO_CX
     this.photoContainer.y = PHOTO_CY
-    this.photoContainer.eventMode = 'static'
-    this.photoContainer.hitArea = new Rectangle(-PHOTO_MAX_W / 2, -PHOTO_MAX_H / 2, PHOTO_MAX_W, PHOTO_MAX_H)
-    this.photoContainer.on('pointerdown', (e) => e.stopPropagation())
+    this.photoContainer.eventMode = 'none'
+    this.visual.addChild(this.photoContainer)
 
-    // ── VIEW ALL button ───────────────────────────────────────────────────────
-    const galleryBtn = this.buildPillButton('VIEW ALL', CANVAS_WIDTH / 2, VIEW_ALL_Y, 220, 52, () => this.onGallery())
-
-    // ── Player text ───────────────────────────────────────────────────────────
+    // ── Player text (inside visual — fades with scene) ────────────────────────
     this.nameTxt = new Text({
       text: '',
       style: { fontFamily: 'monospace', fontSize: 26, fontWeight: 'bold', fill: 0xffffff, letterSpacing: 1.5 },
@@ -117,22 +109,41 @@ export class FocusView {
     this.detailTxt.y = DETAIL_Y
     this.detailTxt.eventMode = 'none'
 
-    // ── Navigation arrows — sit outside panel, stop own propagation ──────────
+    this.visual.addChild(this.nameTxt, this.detailTxt)
+
+    // ── Backdrop click area — full canvas, at root so always hittable ─────────
+    const backdropClickArea = new Container()
+    backdropClickArea.eventMode = 'static'
+    backdropClickArea.cursor = 'default'
+    backdropClickArea.hitArea = new Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    backdropClickArea.on('pointerdown', () => this.onClose())
+
+    // ── Panel interaction blocker — stops taps on panel from reaching backdrop ─
+    // Layered above backdropClickArea so panel taps never trigger onClose.
+    const panelBlocker = new Container()
+    panelBlocker.x = PANEL_X
+    panelBlocker.y = PANEL_Y
+    panelBlocker.eventMode = 'static'
+    panelBlocker.hitArea = new Rectangle(0, 0, PANEL_W, PANEL_H)
+    panelBlocker.on('pointerdown', (e) => e.stopPropagation())
+
+    // ── VIEW ALL button — at root so hittable from the very first frame ───────
+    const galleryBtn = this.buildPillButton('VIEW ALL', CANVAS_WIDTH / 2, VIEW_ALL_Y, 220, 52, () => this.onGallery())
+
+    // ── Navigation arrows ─────────────────────────────────────────────────────
     const prevBtn = this.buildArrow('left',  ARROW_L_X, ARROW_Y, () => this.navigate(-1))
     const nextBtn = this.buildArrow('right', ARROW_R_X, ARROW_Y, () => this.navigate(1))
 
-    // ── Close button — top-right of canvas, outside panel ────────────────────
+    // ── Close button ──────────────────────────────────────────────────────────
     const closeBtn = this.buildCloseButton(CLOSE_X, CLOSE_Y)
 
-    // Draw order matters: backdrop at bottom, then panel, then photo + text
-    // (photo/text are children of root, positioned in canvas coords — they render above panel)
+    // Draw order: visual (fading bg) → backdrop hit area → panel blocker →
+    // interactive controls above. frontmost child = last added = highest priority for events.
     this.root.addChild(
-      backdrop,
-      this.panel,
-      this.photoContainer,
+      this.visual,
+      backdropClickArea,
+      panelBlocker,
       galleryBtn,
-      this.nameTxt,
-      this.detailTxt,
       prevBtn,
       nextBtn,
       closeBtn,
@@ -152,23 +163,30 @@ export class FocusView {
     }
 
     this.updateContent(this.currentIndex)
-    gsap.killTweensOf(this.root)
-    gsap.to(this.root, { alpha: 1, duration: 0.35, ease: 'power2.out', overwrite: true })
+    gsap.killTweensOf(this.visual)
+    gsap.to(this.visual, { alpha: 1, duration: 0.35, ease: 'power2.out', overwrite: true })
   }
 
   hide(): void {
-    gsap.killTweensOf(this.root)
-    gsap.to(this.root, {
+    // Disable all interaction immediately — prevents double-tap from triggering
+    // a second transition while the fade-out animation is in progress.
+    this.root.interactiveChildren = false
+
+    gsap.killTweensOf(this.visual)
+    gsap.to(this.visual, {
       alpha: 0,
       duration: 0.28,
       ease: 'power2.in',
       overwrite: true,
-      onComplete: () => this.root.parent?.removeChild(this.root),
+      onComplete: () => {
+        this.root.parent?.removeChild(this.root)
+        this.root.interactiveChildren = true
+      },
     })
   }
 
   destroy(): void {
-    gsap.killTweensOf(this.root)
+    gsap.killTweensOf(this.visual)
     gsap.killTweensOf(this.photoContainer)
     gsap.killTweensOf(this.nameTxt)
     gsap.killTweensOf(this.detailTxt)
@@ -278,7 +296,6 @@ export class FocusView {
     btn.x = x
     btn.y = y
 
-    // Subtle circle background for visibility
     const circleBg = new Graphics()
     circleBg.circle(0, 0, 32)
     circleBg.fill({ color: 0x000000, alpha: 0.45 })
