@@ -10,12 +10,21 @@ const MAX_SCALE = 1.0
 const MIN_ALPHA = 0.4
 const MAX_ALPHA = 1.0
 
+// Rate at which speedMultiplier closes the gap toward its target (per second).
+// 1 - e^(-3.5 * 1.0) ≈ 97% closed after 1 second — smooth but responsive.
+const SPEED_EASE_RATE = 3.5
+
 export class OrbitEngine {
   private readonly config: OrbitEngineConfig
   private items: OrbitItem[] = []
   private angles: number[] = []
+  private floatPhases: number[] = []
   private backLayer: Container | null = null
   private frontLayer: Container | null = null
+
+  private elapsedSeconds = 0
+  private speedMultiplier = 1.0
+  private targetSpeedMultiplier = 1.0
 
   constructor(config: OrbitEngineConfig) {
     this.config = config
@@ -37,14 +46,32 @@ export class OrbitEngine {
 
       this.items.push(item)
       this.angles.push(angle)
+      // Spread float phases so items never all bob in sync
+      this.floatPhases.push((i / this.config.itemCount) * TWO_PI)
     }
 
     this.applyPositions()
   }
 
-  update(ticker: Ticker): void {
-    const step = (this.config.speed / 60) * ticker.deltaTime
+  /**
+   * Smoothly transition between full speed and slow motion.
+   * Call setSlowMotion(true) on touch start, false on touch end.
+   */
+  setSlowMotion(active: boolean): void {
+    this.targetSpeedMultiplier = active ? this.config.slowMotionScale : 1.0
+  }
 
+  update(ticker: Ticker): void {
+    const dt = ticker.deltaMS / 1000
+
+    // Exponential ease toward target multiplier — frame-rate independent
+    const smoothFactor = 1 - Math.exp(-SPEED_EASE_RATE * dt)
+    this.speedMultiplier = lerp(this.speedMultiplier, this.targetSpeedMultiplier, smoothFactor)
+
+    // Float runs at full rate regardless of orbit speed multiplier
+    this.elapsedSeconds += dt
+
+    const step = this.config.speed * dt * this.speedMultiplier
     for (let i = 0; i < this.angles.length; i++) {
       this.angles[i] = (this.angles[i] + step) % TWO_PI
     }
@@ -58,20 +85,23 @@ export class OrbitEngine {
     }
     this.items = []
     this.angles = []
+    this.floatPhases = []
     this.backLayer = null
     this.frontLayer = null
   }
 
   private applyPositions(): void {
-    const { center, ellipseX, ellipseY } = this.config
+    const { center, ellipseX, ellipseY, floatAmplitude, floatFrequency } = this.config
 
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items[i]
       const angle = this.angles[i]
       const sinA = Math.sin(angle)
 
+      const floatY = floatAmplitude * Math.sin(this.elapsedSeconds * floatFrequency + this.floatPhases[i])
+
       item.container.x = center.x + ellipseX * Math.cos(angle)
-      item.container.y = center.y + ellipseY * sinA
+      item.container.y = center.y + ellipseY * sinA + floatY
 
       const t = (sinA + 1) / 2
       item.container.scale.set(lerp(MIN_SCALE, MAX_SCALE, t))

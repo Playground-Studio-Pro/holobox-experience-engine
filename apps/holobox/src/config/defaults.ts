@@ -29,6 +29,7 @@ export const DEFAULT_CONFIG: ProjectConfig = {
   motion: {
     orbitSpeed: 0.3,
     floatAmplitude: 8,
-    pulseFrequency: 0.5,
+    floatFrequency: 0.4,
+    slowMotionScale: 0.15,
   },
 }

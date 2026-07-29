@@ -28,7 +28,8 @@ export interface ThemeConfig {
 export interface MotionProfile {
   orbitSpeed: number
   floatAmplitude: number
-  pulseFrequency: number
+  floatFrequency: number
+  slowMotionScale: number
 }
 
 export interface ProjectConfig {

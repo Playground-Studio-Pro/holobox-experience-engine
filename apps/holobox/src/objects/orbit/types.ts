@@ -10,4 +10,7 @@ export interface OrbitEngineConfig {
   ellipseY: number
   speed: number
   center: Vec2
+  floatAmplitude: number
+  floatFrequency: number
+  slowMotionScale: number
 }

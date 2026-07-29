@@ -24,6 +24,9 @@ export function useOrbit(
       ellipseX: orbit.ellipseX ?? 420,
       ellipseY: orbit.ellipseY ?? 280,
       speed: motion?.orbitSpeed ?? 0.3,
+      floatAmplitude: motion?.floatAmplitude ?? 8,
+      floatFrequency: motion?.floatFrequency ?? 0.4,
+      slowMotionScale: motion?.slowMotionScale ?? 0.15,
       center: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 },
     })
 
