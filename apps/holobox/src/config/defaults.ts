@@ -1,8 +1,27 @@
-import type { ProjectConfig } from './types'
+import type { ProjectConfig, InstallationConfig } from './types'
 
 export const CANVAS_WIDTH = 1080
 export const CANVAS_HEIGHT = 1920
 export const TARGET_FPS = 60
+
+// ── Default installation profile ──────────────────────────────────────────────
+// Used as the final fallback when installation.json is absent or incomplete.
+// These values describe a generic centered physical object — not device-specific.
+
+export const DEFAULT_INSTALLATION: InstallationConfig = {
+  centerpiece: {
+    safeZone: {
+      shape: 'rect',
+      x: 0.25,
+      y: 0.30,
+      width: 0.50,
+      height: 0.30,
+    },
+    layerSplit: 0.50,
+  },
+}
+
+// ── Default experience config ─────────────────────────────────────────────────
 
 export const DEFAULT_CONFIG: ProjectConfig = {
   experience: 'default',
@@ -10,6 +29,8 @@ export const DEFAULT_CONFIG: ProjectConfig = {
   name: 'Holobox',
   centerpiece: {
     mode: 'physical',
+    safeZone: DEFAULT_INSTALLATION.centerpiece!.safeZone,
+    layerSplit: DEFAULT_INSTALLATION.centerpiece!.layerSplit,
     dev: {
       showPlaceholder: true,
       showGlorifier: true,

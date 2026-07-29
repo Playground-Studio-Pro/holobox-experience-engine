@@ -1,0 +1,12 @@
+{
+  "centerpiece": {
+    "safeZone": {
+      "shape": "rect",
+      "x": 0.25,
+      "y": 0.30,
+      "width": 0.50,
+      "height": 0.30
+    },
+    "layerSplit": 0.50
+  }
+}

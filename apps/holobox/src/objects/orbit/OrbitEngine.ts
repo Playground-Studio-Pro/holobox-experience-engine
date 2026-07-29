@@ -57,7 +57,8 @@ export class OrbitEngine {
         card.setTexture(legacyTextures[i % legacyTextures.length])
       }
 
-      const layer = this.layerFor(Math.sin(angle))
+      const initialY = this.config.center.y + this.config.ellipseY * Math.sin(angle)
+      const layer = this.layerFor(initialY)
       card.currentLayer = layer
       this.layerContainer(layer).addChild(card.container)
 
@@ -162,7 +163,7 @@ export class OrbitEngine {
       item.container.scale.set(item.orbitScale)
       item.container.alpha = item.orbitAlpha
 
-      const target = this.layerFor(sinA)
+      const target = this.layerFor(item.orbitY)
       if (item.currentLayer !== target) {
         this.layerContainer(target).addChild(item.container)
         item.currentLayer = target
@@ -170,8 +171,8 @@ export class OrbitEngine {
     }
   }
 
-  private layerFor(sinAngle: number): OrbitLayer {
-    return sinAngle >= 0 ? 'orbitFront' : 'orbitBack'
+  private layerFor(itemY: number): OrbitLayer {
+    return itemY >= this.config.layerSplit ? 'orbitFront' : 'orbitBack'
   }
 
   private layerContainer(layer: OrbitLayer): Container {

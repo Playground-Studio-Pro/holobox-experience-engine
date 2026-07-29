@@ -32,6 +32,7 @@ export function useOrbit(
       slowMotionScale: motion?.slowMotionScale ?? 0.15,
       showCardFooter: orbit.showCardFooter ?? true,
       center: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 },
+      layerSplit: (config.centerpiece.layerSplit ?? 0.5) * CANVAS_HEIGHT,
       players: assets?.players ?? [],
       photos: assets?.photos ?? [],
     })

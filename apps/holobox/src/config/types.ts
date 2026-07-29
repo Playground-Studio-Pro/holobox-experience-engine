@@ -1,12 +1,29 @@
 import type { CenterPieceMode } from '@/types'
+import type { SafeZoneShape } from '@/spatial'
+
+// ── Installation Profile ──────────────────────────────────────────────────────
+// Describes the physical Holobox installation — device geometry and object
+// placement. Lives in installation.json, separate from any experience.
+// Multiple experiences deployed on the same device share this file.
+
+export interface InstallationConfig {
+  centerpiece?: {
+    /** Occupied screen region of the physical or digital object. Normalized 0–1. */
+    safeZone?: SafeZoneShape
+    /** Normalized Y (0–1) below which orbit items render in front of the centerpiece. */
+    layerSplit?: number
+  }
+}
+
+// ── Experience Configuration ──────────────────────────────────────────────────
 
 export interface CenterPieceConfig {
   mode: CenterPieceMode
   model?: string
-  exclusionZone?: {
-    width?: number
-    height?: number
-  }
+  /** Occupied screen region. Normalized 0–1. Typically comes from installation.json. */
+  safeZone?: SafeZoneShape
+  /** Normalized Y split for front/back orbit layer routing. Typically from installation.json. */
+  layerSplit?: number
   dev?: {
     showPlaceholder?: boolean
     showGlorifier?: boolean
@@ -50,7 +67,6 @@ export interface GalleryConfig {
 /**
  * Data contract for a player card.
  * All fields are optional so the card degrades gracefully with partial data.
- * OrbitEngine passes this to PlayerCard; populate from project.json when real data is available.
  */
 export interface PlayerData {
   /** Display name, e.g. "Tiger Woods" */

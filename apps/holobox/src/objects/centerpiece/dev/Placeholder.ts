@@ -1,28 +1,32 @@
 import { Container, Graphics, Text } from 'pixi.js'
-import type { ExclusionZone } from '../types'
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
+import type { ResolvedSafeZone } from '@/spatial'
 
 const COLOR = 0x888888
 
 export class Placeholder {
   readonly container: Container
 
-  constructor(zone: ExclusionZone) {
+  constructor(zone: ResolvedSafeZone) {
     this.container = new Container()
     this.container.label = 'dev:placeholder'
     this.build(zone)
   }
 
-  private build(zone: ExclusionZone): void {
-    const hw = zone.width / 2
-    const hh = zone.height / 2
+  private build(zone: ResolvedSafeZone): void {
+    // CenterPiece container is anchored at canvas center — convert absolute px to relative.
+    const rx = zone.x - CANVAS_WIDTH / 2
+    const ry = zone.y - CANVAS_HEIGHT / 2
+    const w = zone.width
+    const h = zone.height
 
     const outline = new Graphics()
-    outline.rect(-hw, -hh, zone.width, zone.height)
+    outline.rect(rx, ry, w, h)
     outline.stroke({ color: COLOR, width: 1, alpha: 0.3 })
 
     const cross = new Graphics()
-    cross.moveTo(-hw, -hh).lineTo(hw, hh)
-    cross.moveTo(hw, -hh).lineTo(-hw, hh)
+    cross.moveTo(rx, ry).lineTo(rx + w, ry + h)
+    cross.moveTo(rx + w, ry).lineTo(rx, ry + h)
     cross.stroke({ color: COLOR, width: 1, alpha: 0.15 })
 
     const label = new Text({
@@ -31,7 +35,8 @@ export class Placeholder {
     })
     label.alpha = 0.5
     label.anchor.set(0.5)
-    label.y = -hh + 20
+    label.x = rx + w / 2
+    label.y = ry + 20
 
     this.container.addChild(outline, cross, label)
   }

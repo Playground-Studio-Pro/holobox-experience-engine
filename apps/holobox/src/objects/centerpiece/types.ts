@@ -1,11 +1,8 @@
 import type { Vec2, CenterPieceMode } from '@/types'
+import type { SafeZoneShape, ResolvedSafeZone } from '@/spatial'
 
 export type { CenterPieceMode }
-
-export interface ExclusionZone {
-  width: number
-  height: number
-}
+export type { ResolvedSafeZone }
 
 export interface CenterPieceDevConfig {
   showPlaceholder: boolean
@@ -17,7 +14,8 @@ export interface CenterPieceConfig {
   mode: CenterPieceMode
   model?: string
   position?: Vec2
-  exclusionZone?: Partial<ExclusionZone>
+  safeZone?: SafeZoneShape
+  layerSplit?: number
   dev?: Partial<CenterPieceDevConfig>
 }
 
@@ -25,6 +23,6 @@ export interface ResolvedCenterPieceConfig {
   mode: CenterPieceMode
   model: string | null
   position: Vec2
-  exclusionZone: ExclusionZone
+  safeZone: ResolvedSafeZone
   dev: CenterPieceDevConfig
 }
