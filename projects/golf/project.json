@@ -4,9 +4,11 @@
   "name": "Golf Tournament 2026",
   "centerpiece": {
     "mode": "physical",
-    "showPlaceholder": true,
-    "showGlorifier": true,
-    "showSafeZone": true
+    "dev": {
+      "showPlaceholder": true,
+      "showGlorifier": true,
+      "showSafeZone": true
+    }
   },
   "orbit": {
     "itemCount": 8

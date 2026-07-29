@@ -10,9 +10,11 @@ export const DEFAULT_CONFIG: ProjectConfig = {
   name: 'Holobox',
   centerpiece: {
     mode: 'physical',
-    showPlaceholder: true,
-    showGlorifier: true,
-    showSafeZone: true,
+    dev: {
+      showPlaceholder: true,
+      showGlorifier: true,
+      showSafeZone: true,
+    },
   },
   orbit: {
     itemCount: 8,

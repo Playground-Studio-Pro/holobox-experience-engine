@@ -1,6 +1,8 @@
 import { useRef } from 'react'
 import { useRenderer } from '@/hooks/useRenderer'
 import { useScene } from '@/hooks/useScene'
+import { useCenterPiece } from '@/hooks/useCenterPiece'
+import { DEFAULT_CONFIG } from '@/config/defaults'
 import './styles.css'
 
 export default function Root() {
@@ -8,7 +10,8 @@ export default function Root() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const { rendererRef, ready } = useRenderer(canvasRef, containerRef)
-  useScene(rendererRef, ready)
+  const { sceneRef, sceneReady } = useScene(rendererRef, ready)
+  useCenterPiece(sceneRef, sceneReady, DEFAULT_CONFIG.centerpiece)
 
   return (
     <div id="holobox-root" ref={containerRef}>

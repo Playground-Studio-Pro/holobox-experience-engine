@@ -2,9 +2,15 @@ import type { CenterPieceMode } from '@/types'
 
 export interface CenterPieceConfig {
   mode: CenterPieceMode
-  showPlaceholder?: boolean
-  showGlorifier?: boolean
-  showSafeZone?: boolean
+  exclusionZone?: {
+    width?: number
+    height?: number
+  }
+  dev?: {
+    showPlaceholder?: boolean
+    showGlorifier?: boolean
+    showSafeZone?: boolean
+  }
 }
 
 export interface OrbitConfig {
