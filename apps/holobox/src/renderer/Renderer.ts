@@ -15,9 +15,8 @@ export class Renderer {
     this.app = new Application()
   }
 
-  async init(canvas: HTMLCanvasElement, container: HTMLElement): Promise<void> {
+  async init(container: HTMLElement): Promise<void> {
     await this.app.init({
-      canvas,
       width: this.config.width,
       height: this.config.height,
       backgroundAlpha: 0,
@@ -27,6 +26,15 @@ export class Renderer {
     })
 
     this.app.ticker.maxFPS = 60
+
+    const canvas = this.app.canvas as HTMLCanvasElement
+    canvas.id = 'holobox-canvas'
+    canvas.style.display = 'block'
+    canvas.style.touchAction = 'none'
+    canvas.style.userSelect = 'none'
+    canvas.style.flexShrink = '0'
+
+    container.appendChild(canvas)
 
     this.applyScale(canvas, container)
 
@@ -53,6 +61,8 @@ export class Renderer {
   destroy(): void {
     this.resizeObserver?.disconnect()
     this.resizeObserver = null
+    const canvas = this.app.canvas as HTMLCanvasElement
     this.app.destroy()
+    canvas.remove()
   }
 }

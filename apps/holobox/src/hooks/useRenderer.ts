@@ -10,25 +10,23 @@ const CONFIG: RendererConfig = {
   resolution: window.devicePixelRatio || 1,
 }
 
-export function useRenderer(
-  canvasRef: React.RefObject<HTMLCanvasElement>,
-  containerRef: React.RefObject<HTMLDivElement>,
-) {
+export function useRenderer(containerRef: React.RefObject<HTMLDivElement>) {
   const rendererRef = useRef<Renderer | null>(null)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    const canvas = canvasRef.current
     const container = containerRef.current
-    if (!canvas || !container) return
+    if (!container) return
 
     const renderer = new Renderer(CONFIG)
     rendererRef.current = renderer
     let active = true
+    let initialized = false
 
     renderer
-      .init(canvas, container)
+      .init(container)
       .then(() => {
+        initialized = true
         if (active) setReady(true)
         else renderer.destroy()
       })
@@ -40,8 +38,9 @@ export function useRenderer(
       active = false
       setReady(false)
       rendererRef.current = null
+      if (initialized) renderer.destroy()
     }
-  }, [canvasRef, containerRef])
+  }, [containerRef])
 
   return { rendererRef, ready }
 }

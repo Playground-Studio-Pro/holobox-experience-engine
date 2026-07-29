@@ -8,16 +8,11 @@ import './styles.css'
 
 export default function Root() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const { rendererRef, ready } = useRenderer(canvasRef, containerRef)
+  const { rendererRef, ready } = useRenderer(containerRef)
   const { sceneRef, sceneReady } = useScene(rendererRef, ready)
   useCenterPiece(sceneRef, sceneReady, DEFAULT_CONFIG.centerpiece)
   useOrbit(rendererRef, sceneRef, sceneReady)
 
-  return (
-    <div id="holobox-root" ref={containerRef}>
-      <canvas id="holobox-canvas" ref={canvasRef} />
-    </div>
-  )
+  return <div id="holobox-root" ref={containerRef} />
 }
