@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { InteractionEngine } from '@/interactions'
+import { useEffect, useRef } from 'react'
+import { InteractionEngine, SceneStateMachine } from '@/interactions'
 import type { OrbitEngine } from '@/objects/orbit'
 import type { Renderer } from '@/renderer'
 import { DEFAULT_CONFIG } from '@/config/defaults'
@@ -9,6 +9,8 @@ export function useInteraction(
   orbitEngineRef: React.RefObject<OrbitEngine | null>,
   orbitReady: boolean,
 ) {
+  const machineRef = useRef<SceneStateMachine | null>(null)
+
   useEffect(() => {
     const renderer = rendererRef.current
     const orbitEngine = orbitEngineRef.current
@@ -16,10 +18,14 @@ export function useInteraction(
 
     const config = DEFAULT_CONFIG.interaction ?? { focusTimeoutMs: 5000 }
 
+    const machine = new SceneStateMachine()
+    machineRef.current = machine
+
     const engine = new InteractionEngine(
       orbitEngine.getItems(),
       orbitEngine,
       renderer.app.stage,
+      machine,
       config,
     )
 
@@ -27,6 +33,10 @@ export function useInteraction(
 
     return () => {
       engine.destroy()
+      machine.reset()
+      machineRef.current = null
     }
   }, [rendererRef, orbitEngineRef, orbitReady])
+
+  return { machineRef }
 }

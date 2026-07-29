@@ -14,7 +14,10 @@ export default function Root() {
   const { sceneRef, sceneReady } = useScene(rendererRef, ready)
   useCenterPiece(sceneRef, sceneReady, DEFAULT_CONFIG.centerpiece)
   const { engineRef: orbitEngineRef, orbitReady } = useOrbit(rendererRef, sceneRef, sceneReady)
-  useInteraction(rendererRef, orbitEngineRef, orbitReady)
+  const { machineRef } = useInteraction(rendererRef, orbitEngineRef, orbitReady)
+
+  // machineRef is passed to useGallery in Ticket 0008
+  void machineRef
 
   return <div id="holobox-root" ref={containerRef} />
 }

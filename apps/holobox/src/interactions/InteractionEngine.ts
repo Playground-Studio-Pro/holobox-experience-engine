@@ -2,12 +2,10 @@ import { Rectangle, type Container, type FederatedPointerEvent } from 'pixi.js'
 import type { OrbitItem } from '@/objects/orbit'
 import type { OrbitEngine } from '@/objects/orbit'
 import type { InteractionConfig } from '@/config/types'
+import type { SceneStateMachine } from './SceneStateMachine'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
-type State = 'idle' | 'focused'
-
 export class InteractionEngine {
-  private state: State = 'idle'
   private focusedItem: OrbitItem | null = null
   private timeoutHandle: ReturnType<typeof setTimeout> | null = null
 
@@ -15,6 +13,7 @@ export class InteractionEngine {
     private readonly items: OrbitItem[],
     private readonly orbitEngine: OrbitEngine,
     private readonly stage: Container,
+    private readonly machine: SceneStateMachine,
     private readonly config: InteractionConfig,
   ) {}
 
@@ -46,7 +45,8 @@ export class InteractionEngine {
 
   private onItemTap(item: OrbitItem): void {
     if (this.focusedItem === item) {
-      // Re-tapping the focused item resets the timeout — keeps it in focus
+      // Re-tapping the focused item resets the timeout.
+      // Ticket 0008 will drive machine.transition('gallery') from here.
       this.resetTimeout()
       return
     }
@@ -64,11 +64,11 @@ export class InteractionEngine {
       if (other !== item) other.dim()
     }
 
-    if (this.state !== 'focused') {
+    if (this.machine.state !== 'focused') {
       this.orbitEngine.setSlowMotion(true)
-      this.state = 'focused'
     }
 
+    this.machine.transition('focused')
     this.resetTimeout()
   }
 
@@ -77,7 +77,7 @@ export class InteractionEngine {
   }
 
   private returnToIdle(): void {
-    if (this.state === 'idle') return
+    if (this.machine.state === 'idle') return
 
     this.clearTimeout()
 
@@ -91,7 +91,7 @@ export class InteractionEngine {
     }
 
     this.orbitEngine.setSlowMotion(false)
-    this.state = 'idle'
+    this.machine.transition('idle')
   }
 
   private resetTimeout(): void {
