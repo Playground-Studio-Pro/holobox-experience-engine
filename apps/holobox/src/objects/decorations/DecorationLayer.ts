@@ -1,4 +1,4 @@
-import { Container, Graphics, Assets, Sprite, FillGradient } from 'pixi.js'
+import { Container, Assets, Sprite } from 'pixi.js'
 import type { DecorationsConfig, DecorationItemConfig } from '@/config/types'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
@@ -16,8 +16,6 @@ export class DecorationLayer {
 
     backLayer.addChild(this.back)
     frontLayer.addChild(this.front)
-
-    this.buildVignette(this.back)
 
     const [topSprite, bottomSprite] = await Promise.all([
       config.top?.asset    ? this.loadSprite(config.top)    : Promise.resolve(null),
@@ -46,30 +44,6 @@ export class DecorationLayer {
     this.destroyed = true
     this.front.destroy({ children: true })
     this.back.destroy({ children: true })
-  }
-
-  // ── Ambient vignette ──────────────────────────────────────────────────────
-
-  private buildVignette(container: Container): void {
-    const topFade = new FillGradient({
-      type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local',
-    })
-    topFade.addColorStop(0, 'rgba(0,0,4,0.45)')
-    topFade.addColorStop(1, 'rgba(0,0,4,0)')
-    const topV = new Graphics()
-    topV.rect(0, 0, CANVAS_WIDTH, 350)
-    topV.fill({ fill: topFade })
-    container.addChild(topV)
-
-    const botFade = new FillGradient({
-      type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local',
-    })
-    botFade.addColorStop(0, 'rgba(0,0,4,0)')
-    botFade.addColorStop(1, 'rgba(0,0,4,0.45)')
-    const botV = new Graphics()
-    botV.rect(0, CANVAS_HEIGHT - 350, CANVAS_WIDTH, 350)
-    botV.fill({ fill: botFade })
-    container.addChild(botV)
   }
 
   // ── Asset loader ──────────────────────────────────────────────────────────

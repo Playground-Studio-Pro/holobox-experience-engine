@@ -41,8 +41,8 @@
     "enabled": true,
     "top": {
       "asset": "/projects/golf/logo-gaby.png",
-      "scale": 0.40,
-      "offsetY": 0,
+      "scale": 0.20,
+      "offsetY": -100,
       "opacity": 1.0
     }
   },
