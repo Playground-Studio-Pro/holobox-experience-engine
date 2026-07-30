@@ -4,6 +4,7 @@
   "name": "Golf Tournament 2026",
   "centerpiece": {
     "mode": "physical",
+    "model": "/assets/models/trophy.glb",
     "dev": {
       "showPlaceholder": false,
       "showGlorifier": true,

@@ -11,6 +11,7 @@ import { Glorifier } from './dev/Glorifier'
 import type {
   CenterPieceConfig,
   CenterPieceDevConfig,
+  CenterPieceMode,
   ResolvedCenterPieceConfig,
 } from './types'
 
@@ -37,6 +38,7 @@ const DEFAULTS: ResolvedCenterPieceConfig = {
 export class CenterPiece {
   readonly container: Container
   private readonly config: ResolvedCenterPieceConfig
+  private currentMode: CenterPieceMode
   private mode: PhysicalMode | DigitalMode | null = null
   private safeZoneOverlay: SafeZone | null = null
   private placeholder: Placeholder | null = null
@@ -44,6 +46,7 @@ export class CenterPiece {
 
   constructor(config: CenterPieceConfig) {
     this.config = this.resolve(config)
+    this.currentMode = this.config.mode
 
     this.container = new Container()
     this.container.label = 'centerpiece'
@@ -54,12 +57,34 @@ export class CenterPiece {
     this.buildDevHelpers()
   }
 
+  getMode(): CenterPieceMode {
+    return this.currentMode
+  }
+
+  /** Toggle between physical and digital modes at runtime (dev shortcut). */
+  setMode(mode: CenterPieceMode): void {
+    if (this.currentMode === mode) return
+    this.currentMode = mode
+
+    if (this.mode) {
+      this.container.removeChild(this.mode.container)
+      this.mode.destroy()
+    }
+
+    // Rebuild at index 0 — before dev helper overlays
+    this.mode = mode === 'physical'
+      ? new PhysicalMode()
+      : new DigitalMode(this.config.safeZone, this.config.model)
+
+    this.container.addChildAt(this.mode.container, 0)
+  }
+
   getSafeZone(): ResolvedSafeZone {
     return this.config.safeZone
   }
 
   setDevVisible(key: keyof CenterPieceDevConfig, visible: boolean): void {
-    if (key === 'showSafeZone')   this.safeZoneOverlay?.setVisible(visible)
+    if (key === 'showSafeZone')    this.safeZoneOverlay?.setVisible(visible)
     if (key === 'showPlaceholder') this.placeholder?.setVisible(visible)
     if (key === 'showGlorifier')   this.glorifier?.setVisible(visible)
   }
@@ -92,9 +117,9 @@ export class CenterPiece {
   }
 
   private buildMode(): void {
-    this.mode = this.config.mode === 'physical'
+    this.mode = this.currentMode === 'physical'
       ? new PhysicalMode()
-      : new DigitalMode(this.config.safeZone)
+      : new DigitalMode(this.config.safeZone, this.config.model)
     this.container.addChild(this.mode.container)
   }
 
