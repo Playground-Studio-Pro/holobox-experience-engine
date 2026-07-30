@@ -96,7 +96,7 @@ export interface AssetsConfig {
 // ── Scene Decorations ──────────────────────────────────────────────────────────
 
 export interface DecorationItemConfig {
-  /** URL to an SVG or PNG asset (optional — band is drawn programmatically when absent) */
+  /** URL to a PNG or SVG asset */
   asset?: string
   /** 0–1 opacity. Default 1. */
   opacity?: number
@@ -104,10 +104,6 @@ export interface DecorationItemConfig {
   offsetY?: number
   /** Uniform scale. Default 1. */
   scale?: number
-  /** Primary display text drawn programmatically on the band */
-  title?: string
-  /** Secondary text drawn below title */
-  subtitle?: string
 }
 
 export interface DecorationsConfig {
