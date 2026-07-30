@@ -37,18 +37,15 @@
     "closeButtonY": 730
   },
   "decorations": {
-    "enabled": false,
+    "enabled": true,
     "top": {
-      "asset": "",
-      "opacity": 1.0,
-      "offsetY": 0,
-      "scale": 1.0
+      "title": "GABY LÓPEZ",
+      "subtitle": "LPGA TOUR  ·  PROFESSIONAL GOLF",
+      "opacity": 1.0
     },
     "bottom": {
-      "asset": "",
-      "opacity": 1.0,
-      "offsetY": 0,
-      "scale": 1.0
+      "title": "GOLF TOURNAMENT 2026",
+      "opacity": 1.0
     }
   },
   "assets": {

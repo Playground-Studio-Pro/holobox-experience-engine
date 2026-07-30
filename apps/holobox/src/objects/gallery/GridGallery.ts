@@ -1,8 +1,11 @@
-import { Container, Graphics, Rectangle, Sprite, Text, Assets } from 'pixi.js'
+import { Container, Graphics, Rectangle, Sprite, Text, Assets, FillGradient } from 'pixi.js'
 import type { Texture, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js'
 import { gsap } from 'gsap'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 import type { PlayerData } from '@/config/types'
+
+const FONT_STACK = '"Helvetica Neue", Helvetica, Arial, sans-serif'
+const GOLD       = 0xd4af37
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 const HEADER_H     = 128
@@ -139,30 +142,52 @@ export class GridGallery {
   private buildHeader(): Container {
     const header = new Container()
 
-    // Header background — matches gallery bg, masks any content bleeding up
+    // Header background — solid matching gallery bg
     const headerBg = new Graphics()
     headerBg.rect(0, 0, CANVAS_WIDTH, HEADER_H)
     headerBg.fill({ color: 0x030609, alpha: 1 })
 
-    // Subtle divider at header bottom
+    // Gold accent divider at header bottom
     const divider = new Graphics()
-    divider.rect(40, HEADER_H - 1, CANVAS_WIDTH - 80, 1)
-    divider.fill({ color: 0xffffff, alpha: 0.10 })
+    divider.rect(64, HEADER_H - 1, CANVAS_WIDTH - 128, 1)
+    divider.fill({ color: GOLD, alpha: 0.25 })
 
-    // Title — centered
-    const title = new Text({
-      text: 'GALLERY',
-      style: { fontFamily: 'monospace', fontSize: 26, fontWeight: 'bold', fill: 0xffffff, letterSpacing: 6 },
+    // Gallery label — small, above main title
+    const label = new Text({
+      text: 'COLLECTION',
+      style: { fontFamily: FONT_STACK, fontSize: 11, fontWeight: '400', fill: GOLD, letterSpacing: 5 },
     })
-    title.anchor.set(0.5, 0.5)
+    label.anchor.set(0.5, 1)
+    label.x = CANVAS_WIDTH / 2
+    label.y = HEADER_H / 2 - 6
+    label.alpha = 0.80
+    label.eventMode = 'none'
+
+    // Title — centered, light weight
+    const title = new Text({
+      text: 'ALL PHOTOS',
+      style: { fontFamily: FONT_STACK, fontSize: 22, fontWeight: '300', fill: 0xffffff, letterSpacing: 8 },
+    })
+    title.anchor.set(0.5, 0)
     title.x = CANVAS_WIDTH / 2
-    title.y = HEADER_H / 2
+    title.y = HEADER_H / 2 + 2
     title.eventMode = 'none'
+
+    // Photo count — subtle, top-left
+    const count = new Text({
+      text: `${this.players.length} PHOTOS`,
+      style: { fontFamily: FONT_STACK, fontSize: 11, fontWeight: '300', fill: 0xffffff, letterSpacing: 3 },
+    })
+    count.anchor.set(0, 0.5)
+    count.x = 64
+    count.y = HEADER_H / 2
+    count.alpha = 0.35
+    count.eventMode = 'none'
 
     // Close button — top-right with safe margin
     const closeBtn = this.buildCloseButton(CANVAS_WIDTH - 64, HEADER_H / 2)
 
-    header.addChild(headerBg, divider, title, closeBtn)
+    header.addChild(headerBg, divider, label, title, count, closeBtn)
     return header
   }
 

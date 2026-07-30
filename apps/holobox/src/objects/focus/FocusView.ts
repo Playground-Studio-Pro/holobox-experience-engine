@@ -1,15 +1,18 @@
-import { Container, Graphics, Rectangle, Sprite, Text, Assets } from 'pixi.js'
+import { Container, Graphics, Rectangle, Sprite, Text, Assets, FillGradient } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import { gsap } from 'gsap'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 import type { PlayerData } from '@/config/types'
+
+const FONT_STACK = '"Helvetica Neue", Helvetica, Arial, sans-serif'
+const GOLD       = 0xd4af37
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 const PANEL_W      = 880
 const PANEL_H      = 940
 const PANEL_X      = (CANVAS_WIDTH - PANEL_W) / 2   // 100
 const PANEL_Y      = 70
-const PANEL_RADIUS = 20
+const PANEL_RADIUS = 24
 
 // Photo display area (within panel)
 const PHOTO_MAX_W  = 800
@@ -57,30 +60,49 @@ export class FocusView {
     this.visual.alpha = 0
     this.visual.eventMode = 'none'
 
-    // Backdrop shape (decorative semi-transparent fill)
+    // Backdrop — slightly deeper to make photo pop
     const backdropShape = new Graphics()
     backdropShape.rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-    backdropShape.fill({ color: 0x000205, alpha: 0.52 })
+    backdropShape.fill({ color: 0x000205, alpha: 0.65 })
     this.visual.addChild(backdropShape)
 
-    // Panel background, edge highlight, border
+    // Panel — multi-layer crystal glass effect
     const panelVisual = new Container()
     panelVisual.x = PANEL_X
     panelVisual.y = PANEL_Y
 
+    // Base dark fill — very slightly blue-black
     const panelBg = new Graphics()
     panelBg.roundRect(0, 0, PANEL_W, PANEL_H, PANEL_RADIUS)
-    panelBg.fill({ color: 0x03080f, alpha: 0.78 })
+    panelBg.fill({ color: 0x02060e, alpha: 0.68 })
 
+    // Top-to-bottom inner gradient — lighter at top, adds glass depth
+    const innerGrad = new FillGradient({
+      type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local',
+    })
+    innerGrad.addColorStop(0,    'rgba(255,255,255,0.06)')
+    innerGrad.addColorStop(0.25, 'rgba(255,255,255,0.01)')
+    innerGrad.addColorStop(1,    'rgba(255,255,255,0)')
+    const panelSheen = new Graphics()
+    panelSheen.roundRect(0, 0, PANEL_W, PANEL_H, PANEL_RADIUS)
+    panelSheen.fill({ fill: innerGrad })
+
+    // Top edge highlight — bright thin line
     const edgeHighlight = new Graphics()
-    edgeHighlight.roundRect(1, 1, PANEL_W - 2, 2, PANEL_RADIUS)
-    edgeHighlight.fill({ color: 0xffffff, alpha: 0.18 })
+    edgeHighlight.roundRect(1, 1, PANEL_W - 2, 3, PANEL_RADIUS)
+    edgeHighlight.fill({ color: 0xffffff, alpha: 0.22 })
 
+    // Bottom gold accent line
+    const bottomAccent = new Graphics()
+    bottomAccent.rect(40, PANEL_H - 1, PANEL_W - 80, 1)
+    bottomAccent.fill({ color: GOLD, alpha: 0.20 })
+
+    // Outer border
     const panelBorder = new Graphics()
     panelBorder.roundRect(0, 0, PANEL_W, PANEL_H, PANEL_RADIUS)
-    panelBorder.stroke({ color: 0xffffff, width: 1, alpha: 0.12 })
+    panelBorder.stroke({ color: 0xffffff, width: 1, alpha: 0.14 })
 
-    panelVisual.addChild(panelBg, edgeHighlight, panelBorder)
+    panelVisual.addChild(panelBg, panelSheen, edgeHighlight, bottomAccent, panelBorder)
     this.visual.addChild(panelVisual)
 
     // ── Photo container (inside visual — fades with scene) ────────────────────
@@ -93,7 +115,7 @@ export class FocusView {
     // ── Player text (inside visual — fades with scene) ────────────────────────
     this.nameTxt = new Text({
       text: '',
-      style: { fontFamily: 'monospace', fontSize: 26, fontWeight: 'bold', fill: 0xffffff, letterSpacing: 1.5 },
+      style: { fontFamily: FONT_STACK, fontSize: 24, fontWeight: '300', fill: 0xffffff, letterSpacing: 7 },
     })
     this.nameTxt.anchor.set(0.5)
     this.nameTxt.x = CANVAS_WIDTH / 2
@@ -102,11 +124,12 @@ export class FocusView {
 
     this.detailTxt = new Text({
       text: '',
-      style: { fontFamily: 'monospace', fontSize: 20, fill: 0x9999bb, letterSpacing: 1 },
+      style: { fontFamily: FONT_STACK, fontSize: 15, fontWeight: '400', fill: GOLD, letterSpacing: 3 },
     })
     this.detailTxt.anchor.set(0.5)
     this.detailTxt.x = CANVAS_WIDTH / 2
     this.detailTxt.y = DETAIL_Y
+    this.detailTxt.alpha = 0.85
     this.detailTxt.eventMode = 'none'
 
     this.visual.addChild(this.nameTxt, this.detailTxt)
@@ -273,13 +296,13 @@ export class FocusView {
 
     const bg = new Graphics()
     bg.roundRect(-width / 2, -height / 2, width, height, height / 2)
-    bg.fill({ color: 0x000000, alpha: 0.60 })
+    bg.fill({ color: 0x000000, alpha: 0.55 })
     bg.roundRect(-width / 2, -height / 2, width, height, height / 2)
-    bg.stroke({ color: 0xffffff, width: 1.5, alpha: 0.40 })
+    bg.stroke({ color: 0xffffff, width: 1, alpha: 0.35 })
 
     const txt = new Text({
       text: label,
-      style: { fontFamily: 'monospace', fontSize: 15, fontWeight: 'bold', fill: 0xffffff, letterSpacing: 3 },
+      style: { fontFamily: FONT_STACK, fontSize: 13, fontWeight: '400', fill: 0xffffff, letterSpacing: 4 },
     })
     txt.anchor.set(0.5)
 
