@@ -15,6 +15,8 @@ const MAX_ALPHA = 1.0
 // 1 - e^(-3.5 * 1.0) ≈ 97% closed after 1 second — smooth but responsive.
 const SPEED_EASE_RATE = 3.5
 
+const SWAP_COOLDOWN_SECS = 12
+
 export class OrbitEngine {
   private readonly config: OrbitEngineConfig
   private items: OrbitItem[] = []
@@ -26,6 +28,11 @@ export class OrbitEngine {
   private elapsedSeconds = 0
   private speedMultiplier = 1.0
   private targetSpeedMultiplier = 1.0
+
+  // Photo rotation pool — cycles all available textures through orbit slots
+  private allTextures: Texture[] = []
+  private nextPhotoPool = 0
+  private swapCooldowns: number[] = []
 
   constructor(config: OrbitEngineConfig) {
     this.config = config
@@ -42,6 +49,9 @@ export class OrbitEngine {
     // Player textures are nullable: index N corresponds to players[N], null means no photo.
     const playerTextures = usePlayers ? await this.loadPlayerTextures(players) : []
     const legacyTextures = !usePlayers ? await this.loadTextures(this.config.photos ?? []) : []
+
+    // Build the photo rotation pool from all non-null textures
+    this.allTextures = playerTextures.filter((t): t is Texture => t !== null)
 
     const angleStep = TWO_PI / this.config.itemCount
 
@@ -66,7 +76,17 @@ export class OrbitEngine {
       this.angles.push(angle)
       // Spread float phases so items never all bob in sync
       this.floatPhases.push((i / this.config.itemCount) * TWO_PI)
+      // Stagger cooldowns so slots don't all swap at once; also staggers initial pool pointer
+      this.swapCooldowns.push(i * (SWAP_COOLDOWN_SECS / this.config.itemCount))
     }
+
+    // Staggered fade-in — items appear one by one as if materializing
+    for (let i = 0; i < this.items.length; i++) {
+      this.items[i].startEntrance(i * 0.12)
+    }
+
+    // Prime the pool pointer past the slots already in use
+    this.nextPhotoPool = this.config.itemCount % Math.max(this.allTextures.length, 1)
 
     this.applyPositions()
   }
@@ -98,6 +118,19 @@ export class OrbitEngine {
       this.angles[i] = (this.angles[i] + step) % TWO_PI
     }
 
+    // Photo rotation — swap textures when a slot is at the far-back (low alpha)
+    if (this.allTextures.length > this.config.itemCount) {
+      for (let i = 0; i < this.items.length; i++) {
+        this.swapCooldowns[i] -= dt
+        const item = this.items[i]
+        if (item.orbitAlpha < 0.50 && !item.isDetached && this.swapCooldowns[i] <= 0) {
+          item.swapTexture(this.allTextures[this.nextPhotoPool])
+          this.nextPhotoPool = (this.nextPhotoPool + 1) % this.allTextures.length
+          this.swapCooldowns[i] = SWAP_COOLDOWN_SECS
+        }
+      }
+    }
+
     this.applyPositions()
   }
 
@@ -108,6 +141,8 @@ export class OrbitEngine {
     this.items = []
     this.angles = []
     this.floatPhases = []
+    this.swapCooldowns = []
+    this.allTextures = []
     this.backLayer = null
     this.frontLayer = null
   }

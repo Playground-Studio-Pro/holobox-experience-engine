@@ -186,8 +186,13 @@ export class FocusView {
     }
 
     this.updateContent(this.currentIndex)
+    this.visual.alpha = 0
+    this.visual.y = 20
+    this.visual.scale.set(0.94)
     gsap.killTweensOf(this.visual)
-    gsap.to(this.visual, { alpha: 1, duration: 0.35, ease: 'power2.out', overwrite: true })
+    gsap.killTweensOf(this.visual.scale)
+    gsap.to(this.visual, { alpha: 1, y: 0, duration: 0.45, ease: 'power3.out', overwrite: true })
+    gsap.to(this.visual.scale, { x: 1, y: 1, duration: 0.45, ease: 'power3.out', overwrite: true })
   }
 
   hide(): void {
@@ -196,21 +201,25 @@ export class FocusView {
     this.root.interactiveChildren = false
 
     gsap.killTweensOf(this.visual)
+    gsap.killTweensOf(this.visual.scale)
     gsap.to(this.visual, {
-      alpha: 0,
-      duration: 0.28,
-      ease: 'power2.in',
-      overwrite: true,
+      alpha: 0, y: 12,
+      duration: 0.28, ease: 'power2.in', overwrite: true,
       onComplete: () => {
+        this.visual.scale.set(1)
+        this.visual.y = 0
         this.root.parent?.removeChild(this.root)
         this.root.interactiveChildren = true
       },
     })
+    gsap.to(this.visual.scale, { x: 0.97, y: 0.97, duration: 0.28, ease: 'power2.in', overwrite: true })
   }
 
   destroy(): void {
     gsap.killTweensOf(this.visual)
+    gsap.killTweensOf(this.visual.scale)
     gsap.killTweensOf(this.photoContainer)
+    gsap.killTweensOf(this.photoContainer.scale)
     gsap.killTweensOf(this.nameTxt)
     gsap.killTweensOf(this.detailTxt)
     this.root.parent?.removeChild(this.root)
@@ -229,7 +238,9 @@ export class FocusView {
       onComplete: () => {
         this.currentIndex = index
         this.setPhoto(index)
-        gsap.to(this.photoContainer, { alpha: 1, duration: 0.25, ease: 'power2.out', overwrite: true })
+        this.photoContainer.scale.set(0.95)
+        gsap.to(this.photoContainer, { alpha: 1, duration: 0.3, ease: 'power2.out', overwrite: true })
+        gsap.to(this.photoContainer.scale, { x: 1, y: 1, duration: 0.4, ease: 'back.out(1.2)', overwrite: true })
       },
     })
     gsap.to([this.nameTxt, this.detailTxt], {

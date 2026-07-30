@@ -1,4 +1,5 @@
 import { Container } from 'pixi.js'
+import type { Texture } from 'pixi.js'
 import { gsap } from 'gsap'
 import type { OrbitItemType, OrbitLayer } from './types'
 
@@ -29,6 +30,15 @@ export abstract class OrbitItem {
 
   abstract focus(): void
   abstract unfocus(duration?: number): void
+
+  /** No-op base; PlayerCard overrides to crossfade the photo sprite. */
+  swapTexture(_tex: Texture): void { /* no-op */ }
+
+  /** Staggered fade-in on initial orbit population. */
+  startEntrance(delay: number): void {
+    this.visual.alpha = 0
+    gsap.to(this.visual, { alpha: 1, duration: 0.9, delay, ease: 'power2.out' })
+  }
 
   /** Called when transitioning to Gallery — fades glow while card travels. Default delegates to unfocus. */
   fadeGlowForGallery(duration: number): void {

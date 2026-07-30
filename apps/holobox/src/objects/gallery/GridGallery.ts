@@ -50,17 +50,23 @@ export class GridGallery {
     this.scrollY = 0
     this.scrollContent.y = HEADER_H
 
+    this.root.alpha = 0
+    this.root.y = 70
     if (!this.root.parent) layer.addChild(this.root)
 
     gsap.killTweensOf(this.root)
-    gsap.to(this.root, { alpha: 1, duration: 0.3, ease: 'power2.out', overwrite: true })
+    gsap.to(this.root, { alpha: 1, y: 0, duration: 0.42, ease: 'power3.out', overwrite: true })
   }
 
   close(): void {
     gsap.killTweensOf(this.root)
     gsap.to(this.root, {
-      alpha: 0, duration: 0.25, ease: 'power2.in', overwrite: true,
-      onComplete: () => this.root.parent?.removeChild(this.root),
+      alpha: 0, y: 40,
+      duration: 0.25, ease: 'power2.in', overwrite: true,
+      onComplete: () => {
+        this.root.y = 0
+        this.root.parent?.removeChild(this.root)
+      },
     })
   }
 

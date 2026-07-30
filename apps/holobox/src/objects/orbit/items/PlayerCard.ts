@@ -226,6 +226,20 @@ export class PlayerCard extends OrbitItem {
     this.avatarPlaceholder.visible = false
   }
 
+  override swapTexture(tex: Texture): void {
+    if (!this.photoSprite) {
+      this.setTexture(tex)
+      return
+    }
+    gsap.to(this.photoSprite, {
+      alpha: 0, duration: 0.25, ease: 'power2.in', overwrite: true,
+      onComplete: () => {
+        this.setTexture(tex)
+        gsap.to(this.photoSprite!, { alpha: 1, duration: 0.35, ease: 'power2.out', overwrite: true })
+      },
+    })
+  }
+
   focus(): void {
     gsap.to(this.outerGlow, { alpha: 0.9,  duration: 0.13, ease: 'power2.out', overwrite: true })
     gsap.to(this.innerGlow, { alpha: 0.95, duration: 0.13, ease: 'power2.out', overwrite: true })
