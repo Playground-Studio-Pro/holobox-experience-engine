@@ -18,7 +18,7 @@ Trophy Orbit
 
 # Current Sprint
 
-Demo Experience (Golf) — Ticket 0010, Phase B
+Demo Experience (Golf) — Ticket 0010, Phase G (Content Pipeline + Decorations)
 
 ---
 
@@ -96,17 +96,14 @@ Fullscreen.
 
 # Current Status
 
-0010-A through 0010-C complete. 0010-D-1 (Asset Pipeline + Build Repair) complete.
+0010-A through 0010-D-1 complete. 0010-G (Content Pipeline + Decorations) complete.
 
-Production build is green again: `tsc -b` exits 0, `vite build` succeeds. Photo
-assets reduced from 1538 MB to 114 MB of GPU texture memory.
+23 real Gaby López photos now loading from `projects/golf/Fotos/`. 13 video clips
+registered in the pipeline. Scene Decorations system built and ready.
 
-**Next: 0010-D-2 — Idle Auto-Reset. Then 0010-D-3 — Real Content.**
+**Next: 0010-D-2 — Idle Auto-Reset. Then 0010-E — Caption Pass + Content Polish.**
 
-Digital CenterPiece (GLB) is explicitly DEFERRED until after August 3. The
-centerpiece is a physical trophy; rendering a digital one adds no demo value.
-`trophy.glb` remains in `public/assets/models/` but is referenced by zero lines
-of code.
+Digital CenterPiece (GLB) is explicitly DEFERRED until after August 3.
 
 ---
 
@@ -125,6 +122,9 @@ of code.
 - 0010-B — Visual Quality and Real Assets
 - 0010-C — Interaction Flow Overhaul
 - 0010-D — UX Polish (fix: VIEW ALL first-tap bug)
+- 0010-D-1 — Asset Pipeline and Build Repair
+- 0010-G — Content Pipeline (real Gaby López assets, video structure)
+- 0010-G — Scene Decorations (decorBack/decorFront layers, DecorationLayer)
 
 ---
 
@@ -140,6 +140,9 @@ of code.
 - FocusView: transparent glass panel, hero photo, prev/next arrows, close button, VIEW ALL
 - GridGallery: fixed header, scrollable clipped grid, drag + wheel scroll, tap vs drag detection
 - Transparent Renderer
+- Content Pipeline: Vite plugin serves projects/ at /projects/ — no duplication
+- Scene Decorations: decorBack + decorFront layers (disabled; ready for assets)
+- PlayerData extended: mediaType (photo/video), videoUrl
 
 ---
 
@@ -148,7 +151,8 @@ of code.
 - Transparent renderer
 - Physical centerpiece zone (clean — no dev overlays) with animated Glorifier pedestal
 - Orbiting PlayerCards: photo-only mode (`showCardFooter: false`), gold glow on focus
-- 16 real golf photos loaded from `/assets/photos/golf-01.jpg` through `golf-16.jpg`
+- 23 real Gaby López photos loading from `/projects/golf/Fotos/` (original filenames)
+- 13 video clips registered in content pipeline (not yet rendered)
 - One tap → FocusView (glass panel, contain-scaled hero photo, ×close, prev/next, VIEW ALL)
 - Prev/Next navigation browsing all 16 photos without leaving Focus
 - VIEW ALL → GridGallery (fixed header, scrollable 3×6 grid, drag + wheel scroll)
@@ -415,3 +419,62 @@ content — country-club scenes and male amateur golfers. Earlier notes describi
 them as "16 real golf photos" are accurate only in that they are photographs of
 golf. Every asset in `projects/golf/` is Gaby López. The demo currently tells a
 story about nobody. Raised as risk #2.
+
+---
+
+# End of Session — 2026-07-29 (0010-G: Content Pipeline + Decorations)
+
+## What shipped
+
+### Content Pipeline
+
+The demo now runs on real Gaby López assets.
+
+`projects/golf/Fotos/` (23 images) and `projects/golf/Videos/` (13 clips) are
+the live content source. No files were renamed, moved, or duplicated. A Vite
+plugin (`serveProjects`) intercepts `/projects/*` requests in dev and preview,
+decoding URL-encoded filenames on the fly. Production serves `projects/`
+alongside `dist/` at the same origin — consistent with Electron deployment,
+where both directories are packaged together.
+
+`PlayerData` now carries `mediaType?: 'photo' | 'video'` and `videoUrl?: string`.
+Photos load textures normally. Video entries enter the pipeline as registered
+items — orbit skips their texture load (null path falls through gracefully),
+gallery shows them as blank thumbnail slots. When video rendering is implemented,
+no structural changes are required: the URLs are already there.
+
+`project.json` lists all 36 items: 23 photos (orbit shows first 8), 13 videos
+(gallery only). Both `projects/golf/project.json` and `public/project.json` are
+in sync and serve as the content contract.
+
+### Scene Decorations
+
+A configurable decoration layer is now part of the scene render stack:
+
+```
+background → decorBack → orbitBack → centerpiece → orbitFront → decorFront → effects → interaction → ui
+```
+
+`decorBack` sits behind the orbit — for ambient gradients and background
+graphics. `decorFront` sits in front of the orbit, behind the UI layer — for
+top frames, bottom branding, sponsor graphics, and tournament identity.
+
+`DecorationLayer` loads PNG or SVG assets via PixiJS Assets. Each position (top
+/ bottom) is individually configurable: `asset`, `opacity`, `offsetY`, `scale`.
+The system is disabled in `project.json` (`enabled: false`) and is completely
+inert — zero overhead — until design assets are ready.
+
+## Current state
+
+- 23 real Gaby López photos loading from `projects/golf/Fotos/`
+- Gallery shows all 23 photos; videos recognized but not rendered
+- Captions not yet populated (FocusView shows blank name/detail lines)
+- Decorations: system built, disabled, ready to receive assets
+- TypeScript: zero errors
+
+## Known Risks (updated)
+
+Risk #2 is now mitigated at the pipeline level: real assets are loading. The
+demo tells Gaby López's story in visuals, if not yet in words. Captions remain
+as 0010-E work.
+

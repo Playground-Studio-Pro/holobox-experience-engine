@@ -1,4 +1,8 @@
-import type { ProjectConfig, InstallationConfig } from './types'
+import type { ProjectConfig, InstallationConfig, DecorationsConfig } from './types'
+
+export const DEFAULT_DECORATIONS: DecorationsConfig = {
+  enabled: false,
+}
 
 export const CANVAS_WIDTH = 1080
 export const CANVAS_HEIGHT = 1920
@@ -67,4 +71,5 @@ export const DEFAULT_CONFIG: ProjectConfig = {
     photos: [],
     players: [],
   },
+  decorations: DEFAULT_DECORATIONS,
 }

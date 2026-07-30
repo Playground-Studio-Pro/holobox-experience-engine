@@ -8,7 +8,6 @@ dist
 
 # Heavy source media — kept locally, never committed.
 # Videos: ~700 MB of LPGA footage. Source photos: ~60 MB of camera originals.
-# The delivery set lives in apps/holobox/public/assets/photos and IS committed.
-# Regenerate the delivery set with: python3 scripts/optimize-photos.py
-projects/*/Videos/
+# Delivery photos in projects/*/Fotos/ are committed (lightweight web-ready sizes).
+**/Videos/
 projects/*/source-photos/

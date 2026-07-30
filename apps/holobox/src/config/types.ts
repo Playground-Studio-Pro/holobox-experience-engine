@@ -65,27 +65,53 @@ export interface GalleryConfig {
 }
 
 /**
- * Data contract for a player card.
- * All fields are optional so the card degrades gracefully with partial data.
+ * Data contract for a media item in the content pipeline.
+ * mediaType defaults to 'photo' when absent.
+ * All display fields are optional so the card degrades gracefully with partial data.
  */
 export interface PlayerData {
-  /** Display name, e.g. "Tiger Woods" */
+  /** 'photo' (default) or 'video'. Controls orbit texture loading and future rendering. */
+  mediaType?: 'photo' | 'video'
+  /** Display name */
   name?: string
-  /** Country name or ISO 3166-1 alpha-2 code, e.g. "USA" */
+  /** Country name or ISO 3166-1 alpha-2 code */
   country?: string
-  /** Tournament rank, e.g. 1 */
+  /** Tournament rank */
   rank?: number
   /** Score display string, e.g. "-12" or "E" */
   score?: string
-  /** Path to player photo asset, e.g. "/assets/photos/player-01.jpg" */
+  /** Photo asset URL — used for orbit texture and gallery thumbnail */
   photoUrl?: string
+  /** Video asset URL — reserved for future video rendering support */
+  videoUrl?: string
 }
 
 export interface AssetsConfig {
   /** Legacy flat photo list. Prefer `players` for new experiences. */
   photos: string[]
-  /** Structured player data. When non-empty, takes precedence over `photos`. */
+  /** Structured media items (photos and videos). Takes precedence over `photos` when non-empty. */
   players?: PlayerData[]
+}
+
+// ── Scene Decorations ──────────────────────────────────────────────────────────
+
+export interface DecorationItemConfig {
+  /** URL to an SVG or PNG asset */
+  asset?: string
+  /** 0–1 opacity. Default 1. */
+  opacity?: number
+  /** Y offset from the anchor point, in canvas coordinates. Default 0. */
+  offsetY?: number
+  /** Uniform scale. Default 1. */
+  scale?: number
+}
+
+export interface DecorationsConfig {
+  enabled: boolean
+  /** Top decoration — anchored to the top edge of the canvas */
+  top?: DecorationItemConfig
+  /** Bottom decoration — anchored to the bottom edge of the canvas */
+  bottom?: DecorationItemConfig
 }
 
 export interface ProjectConfig {
@@ -99,4 +125,5 @@ export interface ProjectConfig {
   interaction?: InteractionConfig
   gallery?: GalleryConfig
   assets?: AssetsConfig
+  decorations?: DecorationsConfig
 }

@@ -3,9 +3,11 @@ import type { SceneLayerName } from './index'
 
 const LAYER_ORDER: SceneLayerName[] = [
   'background',
+  'decorBack',
   'orbitBack',
   'centerpiece',
   'orbitFront',
+  'decorFront',
   'effects',
   'interaction',
   'ui',

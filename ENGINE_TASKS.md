@@ -300,16 +300,42 @@ success criteria list "Auto reset."
 
 ### 0010-D-3 — Real Content
 
-Status: TODO
+Status: PARTIAL ✅ (photos connected; captions pending)
 
-The `golf-*.jpg` delivery set is generic stock photography. Every asset in
-`projects/golf/` is Gaby López. The demo currently tells a story about nobody.
+-   ✅ `projects/golf/Fotos/` now the live asset source — 23 Gaby López images
+    connected to orbit, focus, and gallery via the content pipeline
+-   ✅ 13 video clips in `projects/golf/Videos/` registered in `assets.players`;
+    recognized by the engine (`mediaType: 'video'`); not rendered yet
+-   ⬜ Captions still pending: `name` / `country` / `score` fields in
+    `assets.players` are unpopulated; FocusView shows no text under photos
 
--   Replace the delivery set from `projects/golf/Fotos` (25 Gaby López images)
--   Populate `assets.players` with real captions. Single-athlete content model:
-    the `name` / `country` / `score` fields become moment / event / year
--   Rename the `PlayerData` fields only if it can be done without touching
-    `FocusView`, `GridGallery` and `PlayerCard` — otherwise repurpose in place
+### 0010-G — Content Pipeline + Scene Decorations
+
+Status: DONE ✅
+
+**Content Pipeline**
+
+-   `serveProjects` Vite plugin: serves `../../projects/` at `/projects/` in dev
+    and preview; production deployments serve `projects/` alongside `dist/`
+-   Filenames preserved as-is (no renaming); non-ASCII (e.g. `Gaby-López-…`)
+    work via `decodeURIComponent` in the request middleware
+-   `PlayerData` extended: `mediaType?: 'photo' | 'video'` and `videoUrl?: string`
+-   Orbit loads textures for photos only; video entries render as blank cards
+    (graceful degradation via existing null-texture path)
+-   `project.json` (both copies): 23 photo entries + 13 video entries = 36 total;
+    orbit shows first 8 (all photos); gallery shows all 36
+
+**Scene Decorations**
+
+-   Two new scene layers: `decorBack` (behind orbit) and `decorFront` (in front of orbit, behind UI)
+-   `DecorationsConfig`: `enabled`, `top` / `bottom` each with `asset`, `opacity`, `offsetY`, `scale`
+-   `DecorationLayer` object: loads SVG/PNG via PixiJS Assets at mount; top
+    anchored to canvas top, bottom anchored to canvas bottom; purely visual, no
+    event capture
+-   `useDecorations` hook wires the layer to the scene; early-exits when disabled
+-   Currently `enabled: false` in `project.json` — system is live but inert until
+    decoration assets are provided
+-   TypeScript: zero errors
 
 ### 0010-E — Content Polish
 
@@ -317,6 +343,8 @@ Status: TODO
 
 -   Final layout / scale tuning for Holobox screen dimensions
 -   Motion profile fine-tuning
+-   Caption pass: populate `name` / `country` / `score` for each photo in
+    `assets.players` (moment / event / year model fits single-athlete content)
 -   Optional: typography adjustments based on real photos
 
 ### 0010-F — Demo Prep

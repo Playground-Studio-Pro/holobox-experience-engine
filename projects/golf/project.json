@@ -36,25 +36,60 @@
     "targetScale": 3.0,
     "closeButtonY": 730
   },
+  "decorations": {
+    "enabled": false,
+    "top": {
+      "asset": "",
+      "opacity": 1.0,
+      "offsetY": 0,
+      "scale": 1.0
+    },
+    "bottom": {
+      "asset": "",
+      "opacity": 1.0,
+      "offsetY": 0,
+      "scale": 1.0
+    }
+  },
   "assets": {
     "photos": [],
     "players": [
-      { "photoUrl": "/assets/photos/golf-01.jpg" },
-      { "photoUrl": "/assets/photos/golf-02.jpg" },
-      { "photoUrl": "/assets/photos/golf-03.jpg" },
-      { "photoUrl": "/assets/photos/golf-04.jpg" },
-      { "photoUrl": "/assets/photos/golf-05.jpg" },
-      { "photoUrl": "/assets/photos/golf-06.jpg" },
-      { "photoUrl": "/assets/photos/golf-07.jpg" },
-      { "photoUrl": "/assets/photos/golf-08.jpg" },
-      { "photoUrl": "/assets/photos/golf-09.jpg" },
-      { "photoUrl": "/assets/photos/golf-10.jpg" },
-      { "photoUrl": "/assets/photos/golf-11.jpg" },
-      { "photoUrl": "/assets/photos/golf-12.jpg" },
-      { "photoUrl": "/assets/photos/golf-13.jpg" },
-      { "photoUrl": "/assets/photos/golf-14.jpg" },
-      { "photoUrl": "/assets/photos/golf-15.jpg" },
-      { "photoUrl": "/assets/photos/golf-16.jpg" }
+      { "photoUrl": "/projects/golf/Fotos/1594738.jpeg" },
+      { "photoUrl": "/projects/golf/Fotos/306045620_505365544733866_80555322652917789_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/470168832_996523102284772_3267787555758655882_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/470196909_996523382284744_3344790855599625924_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/470241351_997363422200740_5561921842248014100_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/470679864_999220602015022_2123897766923461883_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/508432539_3620462068088681_1876698247261463640_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/508597247_3622606104540944_936784562656865829_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/508631600_3621806727954215_7423983043374943566_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/508735748_3620461974755357_5701943811928922863_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/509972297_3624697044331850_4274485400990828869_n.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/descarga.jpeg" },
+      { "photoUrl": "/projects/golf/Fotos/Gaby-L%C3%B3pez-Dana-Open-819x1024.jpeg" },
+      { "photoUrl": "/projects/golf/Fotos/gaby-lopez-golfista-mexicana-ap.jpeg" },
+      { "photoUrl": "/projects/golf/Fotos/gaby-lopez-golfista-mexicana-ap.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/gaby-lopez-golfista-mexicana-salud.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/Gaby-Lopez-impulsa-a-las-nuevas-generaciones-con-su-primer-Open-juvenil-de-golf--1200x675.webp" },
+      { "photoUrl": "/projects/golf/Fotos/Gaby-lopez-torneo-01.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/i.jpeg" },
+      { "photoUrl": "/projects/golf/Fotos/ImageTransformer.webp" },
+      { "photoUrl": "/projects/golf/Fotos/lopez_g-1059791406.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/lopez_g1200727177.jpg" },
+      { "photoUrl": "/projects/golf/Fotos/WhatsApp-Image-2024-08-08-at-11.36.31-AM.jpeg" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/2026 U.S. Women_s Open Presented by Ally Highlights Gaby Lopez, Round 1  Every Televised Shot - United States Golf Association (USGA) (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/FIRST WIN! Gaby Lopez Round 4 Highlights 2018 Blue Bay LPGA - LPGA (720p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez Final Round Highlights  2022 Dana Open presented by Marathon - LPGA (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez Final Round Highlights - 2020 Diamond Resorts Tournament of Champions - LPGA (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez Interview and Trophy Presentation 2018 Blue Bay LPGA - LPGA (1080p, h264) (1).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez kept it simple in Dana Open win  Golf Central  Golf Channel - Golf Channel (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez slow motion swing %23golf %23lpga %23golfswing - SF Pilot (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez_s Bunker Game - Titleist (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez, would you like some dip with that chip %23lpgalookback - LPGA (720p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/How Gaby Lopez is changing golf in Mexico - VOXA (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/New Video with Gaby Lopez - TPI - Titleist Performance Institute (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Playoff Highlights - 2020 Diamond Resorts Tournament of Champions - LPGA (1080p, h264).mp4" },
+      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Tour veteran Gaby Lopez_s stable tee shot! - iCLOO Golf (1080p, h264).mp4" }
     ]
   }
 }
