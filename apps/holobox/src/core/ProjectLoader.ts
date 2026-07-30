@@ -41,9 +41,11 @@ export class ProjectLoader {
     installation: InstallationConfig,
     project: Partial<ProjectConfig>,
   ): ProjectConfig {
-    const installationCp = installation.centerpiece ?? {}
     const defaultCp = DEFAULT_CONFIG.centerpiece
-    const projectCp = project.centerpiece ?? {}
+    const installationCp: NonNullable<InstallationConfig['centerpiece']> = installation.centerpiece ?? {}
+    // Explicitly typed: `project.centerpiece ?? {}` otherwise widens to `{}`,
+    // which hides `dev` and silently drops the dev-overlay merge below.
+    const projectCp: Partial<ProjectConfig['centerpiece']> = project.centerpiece ?? {}
 
     return {
       ...DEFAULT_CONFIG,
@@ -66,6 +68,9 @@ export class ProjectLoader {
         : DEFAULT_CONFIG.interaction,
       gallery: project.gallery ? { ...DEFAULT_CONFIG.gallery!, ...project.gallery } : DEFAULT_CONFIG.gallery,
       assets: project.assets ? { ...DEFAULT_CONFIG.assets!, ...project.assets } : DEFAULT_CONFIG.assets,
+      decorations: project.decorations
+        ? { ...DEFAULT_CONFIG.decorations!, ...project.decorations }
+        : DEFAULT_CONFIG.decorations,
     }
   }
 }

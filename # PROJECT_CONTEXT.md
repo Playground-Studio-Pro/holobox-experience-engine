@@ -96,7 +96,17 @@ Fullscreen.
 
 # Current Status
 
-0010-A through 0010-D complete. Gallery and Focus UX blocking issues resolved. Cards are photo-only (no footer). FocusView is a transparent glass panel. GridGallery is scrollable with a fixed header. Event isolation is correct in both views. 16 real golf photos in place.
+0010-A through 0010-C complete. 0010-D-1 (Asset Pipeline + Build Repair) complete.
+
+Production build is green again: `tsc -b` exits 0, `vite build` succeeds. Photo
+assets reduced from 1538 MB to 114 MB of GPU texture memory.
+
+**Next: 0010-D-2 — Idle Auto-Reset. Then 0010-D-3 — Real Content.**
+
+Digital CenterPiece (GLB) is explicitly DEFERRED until after August 3. The
+centerpiece is a physical trophy; rendering a digital one adds no demo value.
+`trophy.glb` remains in `public/assets/models/` but is referenced by zero lines
+of code.
 
 ---
 
@@ -114,6 +124,7 @@ Fullscreen.
 - 0010-A — Demo Floor
 - 0010-B — Visual Quality and Real Assets
 - 0010-C — Interaction Flow Overhaul
+- 0010-D — UX Polish (fix: VIEW ALL first-tap bug)
 
 ---
 
@@ -218,9 +229,21 @@ One-tap to focused (no longer two-tap). No auto-timeout. Tracks `focusedIndexSlo
 
 # Known Risks
 
-- Test on actual Holobox hardware
-- Validate touchscreen responsiveness
-- Verify transparent playback on target PC
+Ordered by probability of killing the August 3 demo.
+
+1. **Hardware has never been tested.** Highest risk by a wide margin. Nothing in
+   this repository reduces it. Requires physical time with the Holobox display.
+2. **Content is stock photography, not client content.** The 16 `golf-*.jpg`
+   files are generic golf stock (country-club scenes, male amateur golfers).
+   The actual Gaby López assets sit unused in `projects/golf/Fotos` (25 images)
+   and `projects/golf/Videos` (13 clips, ~700 MB). A client watching their own
+   athlete's story is a fundamentally different sale than a stock photo viewer.
+3. **No captions.** `assets.players` carries `photoUrl` only. `FocusView`
+   renders an empty name and empty detail line on every tap.
+4. **No idle auto-reset.** A visitor who walks away mid-gallery leaves the
+   installation stuck. See 0010-D-2.
+5. Validate touchscreen responsiveness (< 50 ms target).
+6. Verify transparent playback on target PC.
 
 ---
 
@@ -310,3 +333,85 @@ Defined in `config/types.ts`:
 ### State at end of session
 
 Engine renders premium gold-bordered player cards orbiting a clean centerpiece zone. Gallery is fully closeable. Real assets can be dropped in via project.json without touching code. TypeScript reports zero errors.
+
+---
+
+# End of Session — 2026-07-29 (0010-D-1)
+
+## Asset Pipeline and Build Repair
+
+Shipped one ticket. Both items were latent blockers, not enhancements.
+
+### The photo assets were unshippable
+
+The 16 files in `public/assets/photos` were untouched camera originals —
+`golf-01.jpg` at 7039×5279, `golf-14.jpg` at 5304×7952. 61.9 MB on disk.
+
+`OrbitEngine.mount()` awaits `loadPlayerTextures()` for **all 16** before the
+first frame renders, so every one becomes a resident RGBA8 GPU texture:
+
+| | before | after |
+|---|---|---|
+| disk | 61.9 MB | 5.1 MB |
+| GPU texture memory | 1538 MB | 114 MB |
+| largest single texture | 169 MB | 10 MB |
+
+`golf-14.jpg` was also 7952 px on its long edge — within 240 px of the 8192 px
+`MAX_TEXTURE_SIZE` ceiling on common integrated GPUs. One more photo like it
+would have rendered as a silent black card.
+
+Note this *improves* perceived quality. Drawing a 42-megapixel source into a
+122 px card zone forced an extreme downsample that produced aliasing, not detail.
+
+**`scripts/optimize-photos.py`** makes this repeatable: longest edge clamped to
+1600 px, quality 82, 4:2:2 chroma, progressive, EXIF orientation applied then
+stripped (PixiJS ignores EXIF, so an unrotated portrait renders sideways).
+1600 px is chosen deliberately — the largest a photo is ever drawn is the
+FocusView hero at 800×660, leaving 2× headroom.
+
+Originals preserved at `projects/golf/source-photos/` (gitignored).
+
+### The production build was broken
+
+`npm run build` failed. A TS 6 deprecation error on `baseUrl` in
+`tsconfig.app.json` aborted `tsc -b` before it reached the real problems, and
+`dist/` on disk dated from July 28 — it predated all of Sprint 2. Deploying it
+to the kiosk would have shown Sprint 1 code.
+
+Removing `baseUrl` (redundant since TS 5.0; `paths` resolve relative to the
+tsconfig) surfaced six genuine type errors that had been accumulating unseen:
+
+- `ProjectLoader.merge` — `project.centerpiece ?? {}` widened to `{}`, hiding
+  `dev` and **silently dropping the dev-overlay merge**. This was a real bug,
+  not just a type complaint: dev overlays in `project.json` were being ignored.
+- `useGallery` — `focusedIndexRef` typed as `React.RefObject<number>`, whose
+  `current` is `readonly number | null`. Neither assignable nor valid as
+  `FocusView.show(index: number)`. Retyped as a `{ current: number }` slot,
+  matching the pattern `InteractionEngine` already uses.
+- `SafeZoneShape.resolveSafeZone` — the `never` exhaustiveness guard cannot
+  type-check while `SafeZoneShape` has a single member. Converted to a `switch`
+  with a runtime throw and a comment on when to restore the compile-time guard.
+- `centerpiece/index.ts` and `objects/index.ts` — re-exported `ExclusionZone`,
+  deleted in the SafeZone refactor.
+- `InteractionEngine` — unused `config` field, left behind when auto-timeout was
+  removed. Removed along with the now-unused `config` param on `useInteraction`.
+
+`typescript` pinned to `^6` in `apps/holobox/package.json` to match the 6.0.3
+actually installed. The previous `^5` did not describe reality.
+
+**Correction to a previous entry:** the 0010-A note claiming "TypeScript reports
+zero errors" was true under TS 5 but had not held for some time.
+
+### Verified
+
+- `tsc -b --force` → exit 0
+- `vite build` → 781 modules, built in 4.06 s
+- All 16 photos visually inspected post-resize; no artifacts
+
+### Content finding
+
+The `golf-*.jpg` delivery set is **generic stock photography**, not client
+content — country-club scenes and male amateur golfers. Earlier notes describing
+them as "16 real golf photos" are accurate only in that they are photographs of
+golf. Every asset in `projects/golf/` is Gaby López. The demo currently tells a
+story about nobody. Raised as risk #2.

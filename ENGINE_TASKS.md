@@ -234,6 +234,82 @@ Status: DONE ✅
 -   Set `showCardFooter: false` in both `project.json` and `projects/golf/project.json`
 -   FocusView redesigned as transparent glass panel: backdrop alpha 0.52 (orbit and centerpiece softly visible), dark navy glass panel (0x03080f, alpha 0.78) with top-edge highlight and subtle border, explicit Close (×) button at top-right corner, prev/next arrows with circle backgrounds for clarity, VIEW ALL pill below photo, panel event isolation via `hitArea` + `stopPropagation` — clicking photo/controls/panel never closes
 -   GridGallery rebuilt with scroll: fixed header (GALLERY + close button, opaque bg, divider line), clipped scrollable content area via PixiJS mask, drag-to-scroll (pointermove on root) and mouse-wheel scroll, tap vs drag distinguished by pointer movement threshold (< 12px = tap), clicking anywhere inside gallery (between thumbnails, on header bg) does not close — only close button (×) does; thumbnail count: 16 photos in 6 rows × 3 columns, max scroll ~178px
+-   **fix(focus): VIEW ALL first-tap bug resolved** — root cause: `root.alpha=0` during fade-in caused worldAlpha=0 on all children, PixiJS skipped hit-testing. Fix: root stays alpha=1 always; `visual` container wraps all decorative elements and fades instead; interactive controls (VIEW ALL, arrows, close, backdrop click area, panel blocker) are direct children of root — hittable from frame 1. `hide()` sets `interactiveChildren=false` immediately to block second-tap during fade-out. commit: fd74286
+
+### 0010-D-1 — Asset Pipeline and Build Repair
+
+Status: DONE ✅
+
+**Photo assets**
+
+-   The 16 `public/assets/photos/golf-*.jpg` files were untouched camera
+    originals: 61.9 MB on disk, up to 7039×5279 px. `OrbitEngine.mount()` awaits
+    textures for all 16 before the first frame, so all were resident GPU
+    textures — **1538 MB of VRAM**, largest single texture 169 MB.
+-   `golf-14.jpg` at 7952 px was within 240 px of the 8192 px
+    `MAX_TEXTURE_SIZE` ceiling common on integrated GPUs — one more photo of
+    that size would have rendered as a silent black card.
+-   Resized to 1600 px longest edge, quality 82, 4:2:2 chroma, progressive,
+    EXIF orientation applied then stripped. **Disk 61.9 → 5.1 MB. VRAM
+    1538 → 114 MB.** Perceived quality improves: a 42 MP source drawn into a
+    122 px card zone was aliasing, not resolving detail.
+-   `scripts/optimize-photos.py` added so the transform is repeatable and
+    documented rather than a one-off manual export.
+-   Originals preserved at `projects/golf/source-photos/` (gitignored).
+-   `.gitignore` now excludes `projects/*/Videos/` (~700 MB) and
+    `projects/*/source-photos/`.
+
+**Build repair**
+
+`npm run build` was failing and `dist/` on disk predated all of Sprint 2 —
+deploying it would have shipped Sprint 1 code to the kiosk.
+
+-   Removed `baseUrl` from `tsconfig.app.json`. Deprecated in TS 6, removed in
+    TS 7, and redundant since TS 5.0 (`paths` resolve relative to the tsconfig).
+    Its error was aborting `tsc -b` before it reached six real type errors.
+-   `ProjectLoader.merge` — `project.centerpiece ?? {}` widened to `{}`, hiding
+    `dev` and **silently dropping the dev-overlay merge**. A real behavioural
+    bug, not only a type complaint.
+-   `useGallery` — `focusedIndexRef` was typed `React.RefObject<number>`, whose
+    `current` is `readonly number | null`. Retyped as `{ current: number }`,
+    matching the slot pattern `InteractionEngine` already uses.
+-   `SafeZoneShape.resolveSafeZone` — the `never` exhaustiveness guard cannot
+    type-check while `SafeZoneShape` has one member. Converted to a `switch`
+    with a runtime throw plus a note on when to restore the compile-time guard.
+-   Removed stale `ExclusionZone` re-exports from `centerpiece/index.ts` and
+    `objects/index.ts` (deleted in the SafeZone refactor).
+-   Removed the unused `config` field from `InteractionEngine` and the now-unused
+    `config` param from `useInteraction`.
+-   `typescript` pinned to `^6` to match the 6.0.3 actually installed.
+
+Verified: `tsc -b --force` exit 0; `vite build` 781 modules in 4.06 s.
+
+### 0010-D-2 — Idle Auto-Reset
+
+Status: TODO — **next ticket**
+
+`interaction.focusTimeoutMs` has sat in `project.json` unwired since 0010-C.
+A visitor who walks away mid-gallery leaves the installation stranded on a
+static grid. `CLAUDE.md` lists automatic recovery as a core principle and the
+success criteria list "Auto reset."
+
+-   Inactivity timer owned by `InteractionEngine`; any pointer event resets it
+-   On expiry from `focused` or `gallery`, transition to `idle`
+-   Must not fire while a visitor is mid-drag in `GridGallery`
+-   Re-add the `InteractionConfig` param removed in 0010-D-1
+
+### 0010-D-3 — Real Content
+
+Status: TODO
+
+The `golf-*.jpg` delivery set is generic stock photography. Every asset in
+`projects/golf/` is Gaby López. The demo currently tells a story about nobody.
+
+-   Replace the delivery set from `projects/golf/Fotos` (25 Gaby López images)
+-   Populate `assets.players` with real captions. Single-athlete content model:
+    the `name` / `country` / `score` fields become moment / event / year
+-   Rename the `PlayerData` fields only if it can be done without touching
+    `FocusView`, `GridGallery` and `PlayerCard` — otherwise repurpose in place
 
 ### 0010-E — Content Polish
 
@@ -243,14 +319,32 @@ Status: TODO
 -   Motion profile fine-tuning
 -   Optional: typography adjustments based on real photos
 
-### 0010-E — Demo Prep
+### 0010-F — Demo Prep
 
-Status: TODO
+Status: TODO — **highest-risk item in the project**
 
--   Hardware test on Holobox device
--   Touch responsiveness validation
+-   Hardware test on Holobox device (never done; no repository work reduces this)
+-   Touch responsiveness validation (< 50 ms target)
 -   Transparent playback verification
 -   Demo recording
+
+### DEFERRED until after August 3
+
+-   Digital CenterPiece / GLB integration. `trophy.glb` (10 MB) is referenced by
+    zero lines of code. The centerpiece is a physical trophy — that is the
+    product. Rendering a digital one adds cost and no demo value.
+-   Front/back orbit routing refinements
+-   0011 Electron packaging (fullscreen browser is sufficient for one client meeting)
+-   0012 Performance pass as a general project — 0010-D-1 was the performance pass
+
+### DO NOT TOUCH before August 3
+
+-   `SceneStateMachine` transition table
+-   `InteractionEngine` tap routing and the `stopPropagation` chain
+-   `FocusView`'s `root` / `visual` alpha split — this is the fix for the VIEW
+    ALL first-tap bug and it is non-obvious. Refactoring it reintroduces the bug.
+-   The three-layer glow system in `PlayerCard`
+-   Layer ordering in `Scene`
 
 ------------------------------------------------------------------------
 

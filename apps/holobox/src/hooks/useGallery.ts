@@ -8,7 +8,10 @@ import type { ProjectConfig } from '@/config/types'
 export function useGallery(
   sceneRef: React.RefObject<Scene | null>,
   machineRef: React.RefObject<SceneStateMachine | null>,
-  focusedIndexRef: React.RefObject<number>,
+  // Mutable slot, not React.RefObject — RefObject<number>.current is
+  // `readonly number | null`, which neither accepts assignment nor satisfies
+  // FocusView.show(index: number).
+  focusedIndexRef: { current: number },
   orbitReady: boolean,
   config: ProjectConfig,
 ) {

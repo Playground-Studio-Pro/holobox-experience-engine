@@ -1,7 +1,6 @@
 import { Rectangle, type Container, type FederatedPointerEvent } from 'pixi.js'
 import type { OrbitItem } from '@/objects/orbit'
 import type { OrbitEngine } from '@/objects/orbit'
-import type { InteractionConfig } from '@/config/types'
 import type { SceneStateMachine } from './SceneStateMachine'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
@@ -14,7 +13,6 @@ export class InteractionEngine {
     private readonly orbitEngine: OrbitEngine,
     private readonly stage: Container,
     private readonly machine: SceneStateMachine,
-    private readonly config: InteractionConfig,
     private readonly focusedItemSlot: { current: OrbitItem | null },
     private readonly focusedIndexSlot: { current: number },
   ) {}

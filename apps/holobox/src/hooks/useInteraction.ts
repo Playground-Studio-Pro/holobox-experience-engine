@@ -3,13 +3,11 @@ import { InteractionEngine, SceneStateMachine } from '@/interactions'
 import type { OrbitItem } from '@/objects/orbit'
 import type { OrbitEngine } from '@/objects/orbit'
 import type { Renderer } from '@/renderer'
-import type { ProjectConfig } from '@/config/types'
 
 export function useInteraction(
   rendererRef: React.RefObject<Renderer | null>,
   orbitEngineRef: React.RefObject<OrbitEngine | null>,
   orbitReady: boolean,
-  config: ProjectConfig,
 ) {
   const machineRef = useRef<SceneStateMachine | null>(null)
   const focusedItemRef = useRef<OrbitItem | null>(null)
@@ -20,17 +18,17 @@ export function useInteraction(
     const orbitEngine = orbitEngineRef.current
     if (!orbitReady || !renderer || !orbitEngine) return
 
-    const interactionConfig = config.interaction ?? { focusTimeoutMs: 5000 }
-
     const machine = new SceneStateMachine()
     machineRef.current = machine
 
+    // NOTE: config.interaction.focusTimeoutMs is intentionally not wired up.
+    // Focus is dismissed explicitly (close button / backdrop tap). Idle auto-reset
+    // after inactivity is a separate, unbuilt behaviour — see ENGINE_TASKS 0010-D-2.
     const engine = new InteractionEngine(
       orbitEngine.getItems(),
       orbitEngine,
       renderer.app.stage,
       machine,
-      interactionConfig,
       focusedItemRef,
       focusedIndexRef,
     )

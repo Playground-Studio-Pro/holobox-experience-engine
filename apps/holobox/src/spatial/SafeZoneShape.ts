@@ -37,24 +37,29 @@ export function resolveSafeZone(
   canvasW: number,
   canvasH: number,
 ): ResolvedSafeZone {
-  if (zone.shape === 'rect') {
-    const x = zone.x * canvasW
-    const y = zone.y * canvasH
-    const width = zone.width * canvasW
-    const height = zone.height * canvasH
-    return {
-      shape: 'rect',
-      x, y, width, height,
-      cx: x + width / 2,
-      cy: y + height / 2,
-      right: x + width,
-      bottom: y + height,
+  switch (zone.shape) {
+    case 'rect': {
+      const x = zone.x * canvasW
+      const y = zone.y * canvasH
+      const width = zone.width * canvasW
+      const height = zone.height * canvasH
+      return {
+        shape: 'rect',
+        x, y, width, height,
+        cx: x + width / 2,
+        cy: y + height / 2,
+        right: x + width,
+        bottom: y + height,
+      }
     }
+    default:
+      // SafeZoneShape currently has a single member, so TypeScript cannot narrow
+      // this branch to `never` — a compile-time exhaustiveness guard would not
+      // type-check. Once a second shape is added, re-introduce:
+      //     const _exhaustive: never = zone
+      // and the compiler will flag any unhandled case.
+      throw new Error(`[SafeZone] Unhandled shape: ${JSON.stringify(zone)}`)
   }
-  // Exhaustiveness guard — TypeScript will catch unhandled shapes at compile time.
-  const _exhaustive: never = zone
-  void _exhaustive
-  throw new Error(`[SafeZone] Unhandled shape`)
 }
 
 // Point containment in absolute canvas pixels.

@@ -17,9 +17,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
+    // No baseUrl — deprecated in TS 6, removed in TS 7. Since TS 5.0 `paths`
+    // entries resolve relative to this tsconfig's directory, so baseUrl is
+    // redundant. Runtime resolution is handled by the vite `@` alias.
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]
