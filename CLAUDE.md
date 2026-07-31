@@ -272,6 +272,15 @@ No memory leaks
 
 ---
 
+# Reference Documents
+
+See these files for deeper context — read them when making decisions about design, motion, or experience:
+
+- `projects/golf/docs/CREATIVE_BRIEF.md` — creative vision, emotional goals, visual inspiration, design mantra
+- `projects/golf/docs/experience-context.md` — hardware, safe zone, experience flow, orbit, visual language, particles
+
+---
+
 # Repository Structure
 
 apps/
