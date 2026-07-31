@@ -68,6 +68,11 @@ export class EditorialComposition {
     await Promise.allSettled(textureLoads)
   }
 
+  /** Returns the raw PixiJS containers for all mounted photo slots. */
+  getPhotoContainers(): Container[] {
+    return this.photos.map((p) => p.container)
+  }
+
   destroy(): void {
     for (const photo of this.photos) {
       photo.destroy()

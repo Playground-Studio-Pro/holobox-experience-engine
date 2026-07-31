@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Scene } from '@/scene'
 import type { OrbitEngine } from '@/objects'
 import type { ProjectConfig } from '@/config/types'
@@ -10,7 +10,9 @@ export function useEditorialComposition(
   sceneReady: boolean,
   orbitReady: boolean,
   config: ProjectConfig,
-): void {
+): React.RefObject<EditorialComposition | null> {
+  const compositionRef = useRef<EditorialComposition | null>(null)
+
   useEffect(() => {
     const scene = sceneRef.current
     const engine = orbitEngineRef.current
@@ -19,6 +21,7 @@ export function useEditorialComposition(
 
     const players = config.assets?.players ?? []
     const composition = new EditorialComposition(config.composition)
+    compositionRef.current = composition
 
     // Hide orbit items so composition photos take visual ownership
     const orbitItems = engine.getItems()
@@ -39,6 +42,7 @@ export function useEditorialComposition(
     return () => {
       active = false
       composition.destroy()
+      compositionRef.current = null
       // Restore orbit item visibility
       const items = orbitEngineRef.current?.getItems() ?? []
       for (const item of items) {
@@ -46,4 +50,6 @@ export function useEditorialComposition(
       }
     }
   }, [sceneRef, orbitEngineRef, sceneReady, orbitReady])
+
+  return compositionRef
 }
