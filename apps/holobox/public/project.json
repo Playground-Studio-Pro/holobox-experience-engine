@@ -13,14 +13,15 @@
   },
   "orbit": {
     "itemCount": 8,
-    "ellipseX": 420,
-    "ellipseY": 280,
+    "ellipseX": 390,
+    "ellipseY": 310,
+    "centerY": 870,
     "showCardFooter": false
   },
   "theme": {
     "primaryColor": "#ffffff",
     "accentColor": "#d4af37",
-    "backgroundColor": "#000000"
+    "backgroundColor": "#ffffff"
   },
   "motion": {
     "orbitSpeed": 0.3,
@@ -40,51 +41,43 @@
   "decorations": {
     "enabled": true,
     "top": {
-      "asset": "/projects/golf/logo-gaby.png",
-      "scale": 0.20,
-      "offsetY": -100,
+      "asset": "/projects/golf/assets/ui/logos/logo-gaby.png",
+      "scale": 0.32,
+      "offsetY": 40,
       "opacity": 1.0
     }
+  },
+  "footer": {
+    "label": "TORNEO 2026",
+    "name": "GABY LÓPEZ",
+    "meta": "LPGA · DANA OPEN"
   },
   "assets": {
     "photos": [],
     "players": [
-      { "photoUrl": "/projects/golf/Fotos/1594738.jpeg" },
-      { "photoUrl": "/projects/golf/Fotos/306045620_505365544733866_80555322652917789_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/470168832_996523102284772_3267787555758655882_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/470196909_996523382284744_3344790855599625924_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/470241351_997363422200740_5561921842248014100_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/470679864_999220602015022_2123897766923461883_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/508432539_3620462068088681_1876698247261463640_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/508597247_3622606104540944_936784562656865829_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/508631600_3621806727954215_7423983043374943566_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/508735748_3620461974755357_5701943811928922863_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/509972297_3624697044331850_4274485400990828869_n.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/descarga.jpeg" },
-      { "photoUrl": "/projects/golf/Fotos/Gaby-L%C3%B3pez-Dana-Open-819x1024.jpeg" },
-      { "photoUrl": "/projects/golf/Fotos/gaby-lopez-golfista-mexicana-ap.jpeg" },
-      { "photoUrl": "/projects/golf/Fotos/gaby-lopez-golfista-mexicana-ap.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/gaby-lopez-golfista-mexicana-salud.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/Gaby-Lopez-impulsa-a-las-nuevas-generaciones-con-su-primer-Open-juvenil-de-golf--1200x675.webp" },
-      { "photoUrl": "/projects/golf/Fotos/Gaby-lopez-torneo-01.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/i.jpeg" },
-      { "photoUrl": "/projects/golf/Fotos/ImageTransformer.webp" },
-      { "photoUrl": "/projects/golf/Fotos/lopez_g-1059791406.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/lopez_g1200727177.jpg" },
-      { "photoUrl": "/projects/golf/Fotos/WhatsApp-Image-2024-08-08-at-11.36.31-AM.jpeg" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/2026 U.S. Women_s Open Presented by Ally Highlights Gaby Lopez, Round 1  Every Televised Shot - United States Golf Association (USGA) (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/FIRST WIN! Gaby Lopez Round 4 Highlights 2018 Blue Bay LPGA - LPGA (720p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez Final Round Highlights  2022 Dana Open presented by Marathon - LPGA (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez Final Round Highlights - 2020 Diamond Resorts Tournament of Champions - LPGA (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez Interview and Trophy Presentation 2018 Blue Bay LPGA - LPGA (1080p, h264) (1).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez kept it simple in Dana Open win  Golf Central  Golf Channel - Golf Channel (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez slow motion swing %23golf %23lpga %23golfswing - SF Pilot (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez_s Bunker Game - Titleist (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Gaby Lopez, would you like some dip with that chip %23lpgalookback - LPGA (720p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/How Gaby Lopez is changing golf in Mexico - VOXA (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/New Video with Gaby Lopez - TPI - Titleist Performance Institute (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Playoff Highlights - 2020 Diamond Resorts Tournament of Champions - LPGA (1080p, h264).mp4" },
-      { "mediaType": "video", "videoUrl": "/projects/golf/Videos/Tour veteran Gaby Lopez_s stable tee shot! - iCLOO Golf (1080p, h264).mp4" }
+      { "photoUrl": "/projects/golf/assets/fotos/1594738.jpeg" },
+      { "photoUrl": "/projects/golf/assets/fotos/306045620_505365544733866_80555322652917789_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/470168832_996523102284772_3267787555758655882_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/470196909_996523382284744_3344790855599625924_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/470241351_997363422200740_5561921842248014100_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/470679864_999220602015022_2123897766923461883_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/508432539_3620462068088681_1876698247261463640_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/508597247_3622606104540944_936784562656865829_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/508631600_3621806727954215_7423983043374943566_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/508735748_3620461974755357_5701943811928922863_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/509972297_3624697044331850_4274485400990828869_n.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/descarga.jpeg" },
+      { "photoUrl": "/projects/golf/assets/fotos/Gaby-L%C3%B3pez-Dana-Open-819x1024.jpeg" },
+      { "photoUrl": "/projects/golf/assets/fotos/gaby-lopez-golfista-mexicana-ap.jpeg" },
+      { "photoUrl": "/projects/golf/assets/fotos/gaby-lopez-golfista-mexicana-ap.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/gaby-lopez-golfista-mexicana-salud.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/Gaby-Lopez-impulsa-a-las-nuevas-generaciones-con-su-primer-Open-juvenil-de-golf--1200x675.webp" },
+      { "photoUrl": "/projects/golf/assets/fotos/Gaby-lopez-torneo-01.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/i.jpeg" },
+      { "photoUrl": "/projects/golf/assets/fotos/ImageTransformer.webp" },
+      { "photoUrl": "/projects/golf/assets/fotos/lopez_g-1059791406.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/lopez_g1200727177.jpg" },
+      { "photoUrl": "/projects/golf/assets/fotos/WhatsApp-Image-2024-08-08-at-11.36.31-AM.jpeg" }
     ]
   }
 }

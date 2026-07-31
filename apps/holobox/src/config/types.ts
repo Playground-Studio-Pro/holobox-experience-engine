@@ -35,6 +35,8 @@ export interface OrbitConfig {
   itemCount: number
   ellipseX?: number
   ellipseY?: number
+  /** Canvas Y coordinate for the orbit center. Defaults to CANVAS_HEIGHT / 2. */
+  centerY?: number
   /** When false, the card renders photo-only: no name, country, score, or footer background. Default true. */
   showCardFooter?: boolean
 }
@@ -114,6 +116,20 @@ export interface DecorationsConfig {
   bottom?: DecorationItemConfig
 }
 
+/** Exhibition typography rendered at the bottom-left of the canvas. */
+export interface FooterConfig {
+  /** Small label above the name — e.g. event category or status. */
+  label?: string
+  /** Primary name line — large, prominent. */
+  name?: string
+  /** Supporting metadata below the name — e.g. tour / event name. */
+  meta?: string
+  /** Canvas X for the left edge of the text block. Default 60. */
+  x?: number
+  /** Canvas Y for the baseline of the meta line. Default CANVAS_HEIGHT - 100. */
+  y?: number
+}
+
 export interface ProjectConfig {
   experience: string
   version: string
@@ -126,4 +142,5 @@ export interface ProjectConfig {
   gallery?: GalleryConfig
   assets?: AssetsConfig
   decorations?: DecorationsConfig
+  footer?: FooterConfig
 }
