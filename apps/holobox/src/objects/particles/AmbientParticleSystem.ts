@@ -4,7 +4,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
 const TWO_PI = Math.PI * 2
 const DEFAULT_COUNT = 30
-const BLUR_FRACTION = 0.30  // 30% soft blurred circles, 70% tiny dots
+const BLUR_FRACTION = 0.30  // 30% large blurred circles, 70% tiny sharp dots
 
 interface Particle {
   gfx: Graphics
@@ -18,9 +18,9 @@ interface Particle {
 }
 
 /**
- * 30 ambient particles that drift upward very slowly, resembling illuminated dust.
- * 70% are tiny sharp dots; 30% are soft blurred circles.
- * No explosions, no bursts — just continuous subtle drift.
+ * Illuminated dust in a gallery: very slow upward drift, independent alpha breathing.
+ * 70% tiny sharp dots; 30% large soft blurred circles in the far background.
+ * Quantity fixed at 30 — never more, never fewer.
  */
 export class AmbientParticleSystem {
   readonly container = new Container()
@@ -32,28 +32,36 @@ export class AmbientParticleSystem {
 
     for (let i = 0; i < count; i++) {
       const isBlurred = i < blurCount
-      const size = isBlurred ? 5 + Math.random() * 9 : 1 + Math.random() * 2
+
+      // Blurred far-background circles are larger and more varied in size
+      const size = isBlurred
+        ? 8 + Math.random() * 18   // 8–26px — large, impressionistic
+        : 0.8 + Math.random() * 1.8  // 0.8–2.6px — crisp, fine
+
+      // Very faint — dust not snow. Blurred circles even fainter (they're larger)
       const baseAlpha = isBlurred
-        ? 0.05 + Math.random() * 0.08
-        : 0.10 + Math.random() * 0.20
+        ? 0.04 + Math.random() * 0.07
+        : 0.08 + Math.random() * 0.18
 
       const gfx = new Graphics()
       gfx.circle(0, 0, size)
       gfx.fill({ color: 0xffffff })
 
       if (isBlurred) {
-        gfx.filters = [new BlurFilter({ strength: size * 1.4 })]
+        // Heavier blur for background circles — creates real depth variation
+        gfx.filters = [new BlurFilter({ strength: size * 1.6 })]
       }
 
       const p: Particle = {
         gfx,
         x: Math.random() * CANVAS_WIDTH,
         y: Math.random() * CANVAS_HEIGHT,
-        // Slow horizontal drift ± 0.2px/s, gentle upward float 0.06–0.28px/s
-        vx: (Math.random() - 0.5) * 0.40,
-        vy: -0.06 - Math.random() * 0.22,
+        // Very slow — drift is felt, not watched. Max 0.3px/s horizontal.
+        vx: (Math.random() - 0.5) * 0.28,
+        vy: -0.04 - Math.random() * 0.12,  // gentle upward float only
         baseAlpha,
-        phaseSpeed: 0.12 + Math.random() * 0.22,
+        // Each particle breathes at its own rate: cycle 28–80 seconds
+        phaseSpeed: 0.08 + Math.random() * 0.15,
         phase: Math.random() * TWO_PI,
       }
 
@@ -76,14 +84,14 @@ export class AmbientParticleSystem {
       p.x += p.vx
       p.y += p.vy
 
-      // Seamless wrap at ±60px margin so particles never pop in
-      if (p.x < -60) p.x = CANVAS_WIDTH + 60
-      if (p.x > CANVAS_WIDTH + 60) p.x = -60
-      if (p.y < -60) p.y = CANVAS_HEIGHT + 60
-      if (p.y > CANVAS_HEIGHT + 60) p.y = -60
+      // Seamless wrap — particles appear continuously without popping
+      if (p.x < -80) p.x = CANVAS_WIDTH + 80
+      if (p.x > CANVAS_WIDTH + 80) p.x = -80
+      if (p.y < -80) p.y = CANVAS_HEIGHT + 80
+      if (p.y > CANVAS_HEIGHT + 80) p.y = -80
 
-      // Slow alpha breathing — each particle breathes at its own rate
-      p.gfx.alpha = p.baseAlpha * (0.55 + 0.45 * Math.sin(this.elapsed * p.phaseSpeed + p.phase))
+      // Slow breathing alpha — range 50–100% of baseAlpha
+      p.gfx.alpha = p.baseAlpha * (0.50 + 0.50 * Math.sin(this.elapsed * p.phaseSpeed + p.phase))
       p.gfx.x = p.x
       p.gfx.y = p.y
     }

@@ -65,7 +65,7 @@
       "rx": 360,
       "ry": 400,
       "color": "#aaaaaa",
-      "alpha": 0.28,
+      "alpha": 0,
       "lineWidth": 1.2
     },
     "slots": [
@@ -76,7 +76,8 @@
         "width": 278, "height": 355,
         "alpha": 1.0,
         "radius": 18,
-        "layer": "front"
+        "layer": "front",
+        "depth": 1.0
       },
       {
         "label": "supporting-a",
@@ -85,7 +86,8 @@
         "width": 210, "height": 268,
         "alpha": 0.88,
         "radius": 16,
-        "layer": "front"
+        "layer": "front",
+        "depth": 0.72
       },
       {
         "label": "supporting-b",
@@ -94,7 +96,8 @@
         "width": 228, "height": 288,
         "alpha": 0.85,
         "radius": 16,
-        "layer": "front"
+        "layer": "front",
+        "depth": 0.68
       },
       {
         "label": "supporting-c",
@@ -103,7 +106,8 @@
         "width": 200, "height": 255,
         "alpha": 0.72,
         "radius": 16,
-        "layer": "back"
+        "layer": "back",
+        "depth": 0.52
       },
       {
         "label": "ghost-1",
@@ -113,7 +117,8 @@
         "alpha": 0.28,
         "blur": 3.0,
         "radius": 12,
-        "layer": "back"
+        "layer": "back",
+        "depth": 0.28
       },
       {
         "label": "ghost-2",
@@ -123,7 +128,8 @@
         "alpha": 0.22,
         "blur": 3.5,
         "radius": 12,
-        "layer": "back"
+        "layer": "back",
+        "depth": 0.22
       }
     ]
   },

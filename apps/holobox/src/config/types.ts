@@ -154,6 +154,12 @@ export interface CompositionSlotConfig {
   blur?: number
   /** Scene layer: 'back' = orbitBack (behind trophy), 'front' = orbitFront. Default 'front'. */
   layer?: 'back' | 'front'
+  /**
+   * Spatial depth — 0.0 = far background, 1.0 = closest foreground.
+   * Drives shadow size/opacity, floating amplitude, floating speed.
+   * Independent from alpha/blur which control visual appearance.
+   */
+  depth?: number
 }
 
 export interface CompositionEllipseConfig {
