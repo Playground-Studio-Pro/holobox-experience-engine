@@ -20,6 +20,12 @@ export interface FloatingTarget {
   depth: number
 }
 
+/** Mutable view of a floating item's base position — GSAP can animate these directly. */
+export interface FloatingBase {
+  baseX: number
+  baseY: number
+}
+
 interface FloatingItem {
   container: Container
   baseX: number
@@ -91,6 +97,16 @@ export class FloatingMotionSystem {
       item.container.y = item.baseY + dy
       item.container.rotation = rotation
     }
+  }
+
+  /**
+   * Returns a mutable reference to the item's base position.
+   * GSAP can animate baseX/baseY directly — FloatingMotionSystem applies
+   * floating offsets on top of these values every tick, creating the
+   * "photograph floating through space" effect during transitions.
+   */
+  getBaseProxy(container: Container): FloatingBase | null {
+    return this.items.find(i => i.container === container) ?? null
   }
 
   destroy(): void {

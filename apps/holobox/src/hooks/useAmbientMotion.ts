@@ -9,6 +9,8 @@ import { FloatingMotionSystem } from '@/objects/motion/FloatingMotionSystem'
 import { AmbientParticleSystem } from '@/objects/particles/AmbientParticleSystem'
 import { OrbitDecorationLayer } from '@/objects/orbit/OrbitDecorationLayer'
 import { TrophyHalo } from '@/objects/effects/TrophyHalo'
+import { InteractionController } from '@/objects/composition/InteractionController'
+import { HeroTransitionController } from '@/objects/composition/HeroTransitionController'
 import { lerp } from '@/utils'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
@@ -105,6 +107,19 @@ export function useAmbientMotion(
     const halo = new TrophyHalo(haloX, haloY, 480)
     halo.mount(scene.getLayer('orbitBack'))
 
+    // ── System 5: Composition interaction — hover + hero transitions ──────────
+    const interactionCtrl = new InteractionController(containers, slots)
+    interactionCtrl.mount()
+
+    const heroTransition = new HeroTransitionController(
+      containers,
+      slots,
+      floating,
+      orbitDeco,
+      interactionCtrl,
+    )
+    interactionCtrl.onSlotClick((index) => heroTransition.triggerSwap(index))
+
     // ── Unified ticker ────────────────────────────────────────────────────────
     const onTick = (ticker: Ticker) => {
       floating.update(ticker)
@@ -116,6 +131,8 @@ export function useAmbientMotion(
 
     return () => {
       renderer.ticker.remove(onTick)
+      interactionCtrl.destroy()
+      heroTransition.destroy()
       floating.destroy()
       particles.destroy()
       orbitDeco?.destroy()

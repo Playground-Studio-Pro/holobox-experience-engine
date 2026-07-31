@@ -1,6 +1,7 @@
 import { Container, Graphics, BlurFilter } from 'pixi.js'
 import type { Ticker } from 'pixi.js'
 import type { CompositionEllipseConfig } from '@/config/types'
+import { lerp } from '@/utils'
 
 const TWO_PI = Math.PI * 2
 
@@ -44,6 +45,10 @@ export class OrbitDecorationLayer {
   private backLayer: Container | null = null
   private frontLayer: Container | null = null
   private elapsed = 0
+
+  private speedMultiplier = 1.0
+  private targetSpeedMultiplier = 1.0
+  private static readonly SPEED_EASE_RATE = 2.5
 
   constructor(ellipse: CompositionEllipseConfig, layerSplit: number) {
     this.cx = ellipse.cx
@@ -112,9 +117,18 @@ export class OrbitDecorationLayer {
     }
   }
 
+  /** Smoothly reduce orbit decoration speed to ~25% during a hero transition. */
+  setSlowMotion(active: boolean): void {
+    this.targetSpeedMultiplier = active ? 0.25 : 1.0
+  }
+
   update(ticker: Ticker): void {
     const dt = ticker.deltaMS / 1000
     this.elapsed += dt
+
+    // Smooth speed transition — frame-rate independent
+    const smoothFactor = 1 - Math.exp(-OrbitDecorationLayer.SPEED_EASE_RATE * dt)
+    this.speedMultiplier = lerp(this.speedMultiplier, this.targetSpeedMultiplier, smoothFactor)
 
     // ── Ellipse breathing ──────────────────────────────────────────────────────
     if (this.ellipseGfx) {
@@ -125,7 +139,7 @@ export class OrbitDecorationLayer {
 
     // ── Sparks ─────────────────────────────────────────────────────────────────
     for (const spark of this.sparks) {
-      spark.angle = (spark.angle + spark.speed * dt) % TWO_PI
+      spark.angle = (spark.angle + spark.speed * this.speedMultiplier * dt) % TWO_PI
 
       const x = this.cx + this.rx * Math.cos(spark.angle)
       const y = this.cy + this.ry * Math.sin(spark.angle)
@@ -142,7 +156,7 @@ export class OrbitDecorationLayer {
     }
 
     // ── Comet ──────────────────────────────────────────────────────────────────
-    this.cometAngle = (this.cometAngle + this.cometSpeed * dt) % TWO_PI
+    this.cometAngle = (this.cometAngle + this.cometSpeed * this.speedMultiplier * dt) % TWO_PI
 
     for (let i = 0; i < this.cometDots.length; i++) {
       const dotAngle = this.cometAngle - i * TRAIL_STEP
