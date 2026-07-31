@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Ticker } from 'pixi.js'
-import { BlurFilter } from 'pixi.js'
 import { OrbitEngine } from '@/objects/orbit'
 import type { Scene } from '@/scene'
 import type { Renderer } from '@/renderer'
@@ -47,8 +46,6 @@ export function useOrbit(
       .mount(scene.getLayer('orbitBack'), scene.getLayer('orbitFront'))
       .then(() => {
         if (!active) return
-        // Subtle depth blur — ghost photos behind the trophy feel further away
-        scene.getLayer('orbitBack').filters = [new BlurFilter({ strength: 2 })]
         onTick = (ticker: Ticker) => engine.update(ticker)
         renderer.ticker.add(onTick)
         setOrbitReady(true)

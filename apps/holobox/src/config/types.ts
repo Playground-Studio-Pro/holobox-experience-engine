@@ -130,6 +130,57 @@ export interface FooterConfig {
   y?: number
 }
 
+// ── Editorial Composition ─────────────────────────────────────────────────────
+
+/** A single curated photo slot in the editorial composition. */
+export interface CompositionSlotConfig {
+  /** Human-readable identifier — "hero", "supporting-a", "ghost-1", etc. */
+  label?: string
+  /** Index into assets.players[]. -1 skips texture load. */
+  playerIndex: number
+  /** Canvas X center of the slot */
+  x: number
+  /** Canvas Y center of the slot */
+  y: number
+  /** Photo display width in canvas px */
+  width: number
+  /** Photo display height in canvas px */
+  height: number
+  /** Corner radius. Default 14. */
+  radius?: number
+  /** Opacity: 1.0 for hero, ~0.15 for ghost. */
+  alpha: number
+  /** Per-slot blur strength. 0 or absent = no blur. */
+  blur?: number
+  /** Scene layer: 'back' = orbitBack (behind trophy), 'front' = orbitFront. Default 'front'. */
+  layer?: 'back' | 'front'
+}
+
+export interface CompositionEllipseConfig {
+  /** Canvas X center */
+  cx: number
+  /** Canvas Y center */
+  cy: number
+  /** X radius */
+  rx: number
+  /** Y radius */
+  ry: number
+  /** Stroke color — CSS hex string ("#rrggbb") or 0xrrggbb number */
+  color?: string | number
+  /** Stroke alpha. Default 0.18. */
+  alpha?: number
+  /** Stroke width in canvas px. Default 1. */
+  lineWidth?: number
+}
+
+export interface EditorialCompositionConfig {
+  enabled: boolean
+  /** Curated photo slots (hero, supporting, ghost, etc.) */
+  slots: CompositionSlotConfig[]
+  /** Optional decorative orbit-path ellipse drawn on orbitBack */
+  ellipse?: CompositionEllipseConfig
+}
+
 export interface ProjectConfig {
   experience: string
   version: string
@@ -143,4 +194,5 @@ export interface ProjectConfig {
   assets?: AssetsConfig
   decorations?: DecorationsConfig
   footer?: FooterConfig
+  composition?: EditorialCompositionConfig
 }

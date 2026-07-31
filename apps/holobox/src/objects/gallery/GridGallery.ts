@@ -1,4 +1,4 @@
-import { Container, Graphics, Rectangle, Sprite, Text, Assets, FillGradient } from 'pixi.js'
+import { Container, Graphics, Rectangle, Sprite, Text, Assets } from 'pixi.js'
 import type { Texture, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js'
 import { gsap } from 'gsap'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
