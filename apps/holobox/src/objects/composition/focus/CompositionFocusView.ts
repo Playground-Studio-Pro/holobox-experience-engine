@@ -1,46 +1,38 @@
-import { Container, Graphics, Rectangle, Text, FillGradient } from 'pixi.js'
+import { Container, Graphics, Rectangle } from 'pixi.js'
 import { gsap } from 'gsap'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
-import type { PlayerData } from '@/config/types'
 
-const FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif'
-const GOLD = 0xd4af37
+// Photo area reference — arrows align with the photo centre
+const FOCUS_CENTER_Y = 610
 
-// Glass panel dimensions — sits below the focus photo
-const PANEL_W = 860
-const PANEL_H = 290
-const PANEL_X = (CANVAS_WIDTH - PANEL_W) / 2  // 110
-const PANEL_Y = 1185
-const PANEL_R = 20
+// Arrow glyphs — positioned at canvas edges, clear of any photo size
+const ARROW_Y     = FOCUS_CENTER_Y
+const ARROW_L_X   = 58
+const ARROW_R_X   = CANVAS_WIDTH - 58
+const ARROW_ALPHA = 0.55
 
-// Close button — top-right of the panel area
-const CLOSE_X = PANEL_X + PANEL_W - 30
-const CLOSE_Y = PANEL_Y + 30
+// Pagination dots — just below the focus photo bottom (525px below centre)
+const DOTS       = 5
+const DOT_R      = 3
+const DOT_GAP    = 12
+const DOTS_Y     = FOCUS_CENTER_Y + 525 + 32
+const DOTS_START = CANVAS_WIDTH / 2 - ((DOTS - 1) * DOT_GAP) / 2
 
-// Pagination dots — bottom center of panel
-const DOTS      = 5
-const DOT_R     = 4
-const DOT_GAP   = 14
-const DOTS_Y    = PANEL_Y + PANEL_H - 28
-const DOTS_CX   = CANVAS_WIDTH / 2
-const DOTS_START = DOTS_CX - ((DOTS - 1) * DOT_GAP) / 2
-
-// Swipe — minimum horizontal movement to trigger navigation
+// Swipe detection
 const SWIPE_THRESHOLD = 50
 
 /**
- * Glass metadata panel for the Focus Experience.
+ * Minimal focus overlay: two navigation arrows + pagination dots.
  *
- * - Backdrop: tap → close, horizontal swipe → navigate
- * - Nav arrows: left/right, positioned above the panel blocker
- * - Pagination dots: dynamic — call setActiveDot(playerIndex) to update
- * - updatePanel(): updates name/meta while panel is visible (no animation)
+ * Everything else — metadata panel, close button, decorative frames — removed.
+ * The photograph is the hero. The interface is invisible.
+ *
+ * Close: tap anywhere outside the photograph (backdrop handles it).
+ * Navigate: tap arrows, swipe backdrop, or keyboard (handled by FocusController).
  */
 export class CompositionFocusView {
   readonly root: Container
-  private readonly panelVisual: Container
-  private readonly nameText: Text
-  private readonly metaText: Text
+  private readonly uiGroup: Container
   private readonly dotGraphics: Graphics[] = []
   private isVisible = false
 
@@ -51,7 +43,7 @@ export class CompositionFocusView {
     this.root = new Container()
     this.root.label = 'focus:view'
 
-    // ── Backdrop — full canvas. Tap → close, swipe → navigate ────────────────
+    // ── Backdrop — fullscreen. Tap (no swipe) → close. Swipe → navigate. ─────
     let swipeStartX = 0
     const backdrop = new Container()
     backdrop.eventMode = 'static'
@@ -67,95 +59,18 @@ export class CompositionFocusView {
       }
     })
 
-    // ── Panel visual ──────────────────────────────────────────────────────────
-    const panelVisual = new Container()
-    panelVisual.alpha = 0
+    // ── UI group: arrows + dots. Fades in after photo settles. ───────────────
+    const uiGroup = new Container()
+    uiGroup.alpha = 0
 
-    const panelBg = new Graphics()
-    panelBg.roundRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_R)
-    panelBg.fill({ color: 0x0a1020, alpha: 0.80 })
+    uiGroup.addChild(this.buildArrow('left'))
+    uiGroup.addChild(this.buildArrow('right'))
+    uiGroup.addChild(this.buildDots())
 
-    const sheen = new FillGradient({
-      type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local',
-    })
-    sheen.addColorStop(0,    'rgba(255,255,255,0.07)')
-    sheen.addColorStop(0.30, 'rgba(255,255,255,0.01)')
-    sheen.addColorStop(1,    'rgba(255,255,255,0)')
-    const panelSheen = new Graphics()
-    panelSheen.roundRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_R)
-    panelSheen.fill({ fill: sheen })
+    this.uiGroup = uiGroup
 
-    const topEdge = new Graphics()
-    topEdge.roundRect(PANEL_X + 1, PANEL_Y + 1, PANEL_W - 2, 3, PANEL_R)
-    topEdge.fill({ color: 0xffffff, alpha: 0.20 })
-
-    const bottomAccent = new Graphics()
-    bottomAccent.rect(PANEL_X + 40, PANEL_Y + PANEL_H - 1, PANEL_W - 80, 1)
-    bottomAccent.fill({ color: GOLD, alpha: 0.22 })
-
-    const panelBorder = new Graphics()
-    panelBorder.roundRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_R)
-    panelBorder.stroke({ color: 0xffffff, width: 1, alpha: 0.13 })
-
-    panelVisual.addChild(panelBg, panelSheen, topEdge, bottomAccent, panelBorder)
-
-    // ── Player name ───────────────────────────────────────────────────────────
-    const nameText = new Text({
-      text: '',
-      style: { fontFamily: FONT, fontSize: 36, fontWeight: '300', fill: 0xffffff, letterSpacing: 6 },
-    })
-    nameText.anchor.set(0.5, 0)
-    nameText.x = CANVAS_WIDTH / 2
-    nameText.y = PANEL_Y + 32
-    nameText.eventMode = 'none'
-    panelVisual.addChild(nameText)
-    this.nameText = nameText
-
-    const divider = new Graphics()
-    divider.rect(PANEL_X + 60, PANEL_Y + 88, PANEL_W - 120, 1)
-    divider.fill({ color: 0xffffff, alpha: 0.12 })
-    panelVisual.addChild(divider)
-
-    // ── Meta row ──────────────────────────────────────────────────────────────
-    const metaText = new Text({
-      text: '',
-      style: { fontFamily: FONT, fontSize: 14, fontWeight: '400', fill: GOLD, letterSpacing: 3, align: 'center' },
-    })
-    metaText.anchor.set(0.5, 0)
-    metaText.x = CANVAS_WIDTH / 2
-    metaText.y = PANEL_Y + 102
-    metaText.alpha = 0.85
-    metaText.eventMode = 'none'
-    panelVisual.addChild(metaText)
-    this.metaText = metaText
-
-    // ── Pagination dots (visual, updated via setActiveDot) ────────────────────
-    for (let i = 0; i < DOTS; i++) {
-      const dot = new Graphics()
-      dot.eventMode = 'none'
-      this.dotGraphics.push(dot)
-      panelVisual.addChild(dot)
-    }
-    this.setActiveDot(0)
-
-    this.panelVisual = panelVisual
-
-    // ── Panel blocker — stops backdrop close when tapping panel area ──────────
-    const panelBlocker = new Container()
-    panelBlocker.eventMode = 'static'
-    panelBlocker.hitArea   = new Rectangle(PANEL_X, PANEL_Y, PANEL_W, PANEL_H)
-    panelBlocker.on('pointerdown', (e) => e.stopPropagation())
-    panelBlocker.on('pointerup',   (e) => e.stopPropagation())
-
-    // ── Nav arrows — above panelBlocker in z-order so they receive events ─────
-    const leftArrow  = this.buildArrowButton('left',  PANEL_X + 40,          PANEL_Y + PANEL_H / 2 - 10)
-    const rightArrow = this.buildArrowButton('right', PANEL_X + PANEL_W - 40, PANEL_Y + PANEL_H / 2 - 10)
-
-    // ── Close button ──────────────────────────────────────────────────────────
-    const closeBtn = this.buildCloseButton()
-
-    // Draw order: backdrop → panelVisual → panelBlocker → arrows → closeBtn
-    this.root.addChild(backdrop, panelVisual, panelBlocker, leftArrow, rightArrow, closeBtn)
+    // z-order: backdrop (bottom) → uiGroup (arrows + dots on top)
+    this.root.addChild(backdrop, uiGroup)
   }
 
   mount(uiLayer: Container): void {
@@ -166,33 +81,23 @@ export class CompositionFocusView {
     this.root.parent?.removeChild(this.root)
   }
 
-  /** Update name/meta text. Safe to call at any time — no animation. */
-  updatePanel(player: PlayerData | null, fallbackName?: string): void {
-    const name = player?.name ?? fallbackName ?? ''
-    this.nameText.text = name.toUpperCase()
-
-    const parts: string[] = []
-    if (player?.country) parts.push(player.country.toUpperCase())
-    if (player?.rank !== undefined) parts.push(`#${player.rank}`)
-    else if (parts.length === 0 && fallbackName) parts.push('LPGA · DANA OPEN')
-    this.metaText.text = parts.join('  ·  ')
-  }
-
-  /** Fade panel in. Should only be called once per focus session. */
-  showPanel(player: PlayerData | null, fallbackName?: string): void {
+  showPanel(): void {
     if (this.isVisible) return
     this.isVisible = true
-
-    this.updatePanel(player, fallbackName)
-    this.setActiveDot(0)
-
-    gsap.killTweensOf(this.panelVisual)
-    this.panelVisual.alpha = 0
-    this.panelVisual.y     = 22
-    gsap.to(this.panelVisual, { alpha: 1, y: 0, duration: 0.42, ease: 'expo.out', overwrite: true })
+    gsap.killTweensOf(this.uiGroup)
+    this.uiGroup.alpha = 0
+    gsap.to(this.uiGroup, { alpha: 1, duration: 0.35, ease: 'expo.out', overwrite: true })
   }
 
-  /** Update the active pagination dot. activeIndex is the current player index. */
+  hidePanel(onComplete?: () => void): void {
+    if (!this.isVisible) { onComplete?.(); return }
+    this.isVisible = false
+    gsap.killTweensOf(this.uiGroup)
+    gsap.to(this.uiGroup, {
+      alpha: 0, duration: 0.22, ease: 'power2.in', overwrite: true, onComplete,
+    })
+  }
+
   setActiveDot(activeIndex: number): void {
     const activePos = activeIndex % DOTS
     for (let i = 0; i < this.dotGraphics.length; i++) {
@@ -200,70 +105,50 @@ export class CompositionFocusView {
       const isActive = i === activePos
       dot.clear()
       dot.circle(DOTS_START + i * DOT_GAP, DOTS_Y, isActive ? DOT_R + 1 : DOT_R)
-      dot.fill({ color: 0xffffff, alpha: isActive ? 0.70 : 0.25 })
+      dot.fill({ color: 0xffffff, alpha: isActive ? 0.60 : 0.20 })
     }
   }
 
-  hidePanel(onComplete?: () => void): void {
-    if (!this.isVisible) { onComplete?.(); return }
-    this.isVisible = false
-    gsap.killTweensOf(this.panelVisual)
-    gsap.to(this.panelVisual, {
-      alpha: 0, y: 12,
-      duration: 0.30, ease: 'power2.in', overwrite: true,
-      onComplete,
-    })
-  }
-
   destroy(): void {
-    gsap.killTweensOf(this.panelVisual)
+    gsap.killTweensOf(this.uiGroup)
     this.unmount()
     this.root.destroy({ children: true })
   }
 
-  private buildArrowButton(dir: 'left' | 'right', x: number, y: number): Container {
+  private buildArrow(dir: 'left' | 'right'): Container {
+    const x   = dir === 'left' ? ARROW_L_X : ARROW_R_X
     const btn = new Container()
 
     const g = new Graphics()
     if (dir === 'left') {
-      g.moveTo(x + 10, y - 12).lineTo(x - 4, y).lineTo(x + 10, y + 12)
+      g.moveTo(x + 10, ARROW_Y - 14).lineTo(x - 6, ARROW_Y).lineTo(x + 10, ARROW_Y + 14)
     } else {
-      g.moveTo(x - 10, y - 12).lineTo(x + 4, y).lineTo(x - 10, y + 12)
+      g.moveTo(x - 10, ARROW_Y - 14).lineTo(x + 6, ARROW_Y).lineTo(x - 10, ARROW_Y + 14)
     }
-    g.stroke({ color: 0xffffff, width: 1.5, alpha: 0.55, cap: 'round', join: 'round' })
+    g.stroke({ color: 0xffffff, width: 2, alpha: ARROW_ALPHA, cap: 'round', join: 'round' })
 
     btn.addChild(g)
     btn.eventMode = 'static'
     btn.cursor    = 'pointer'
-    btn.hitArea   = new Rectangle(x - 30, y - 30, 60, 60)
+    btn.hitArea   = new Rectangle(x - 36, ARROW_Y - 44, 72, 88)
     btn.on('pointerdown', (e) => { e.stopPropagation(); this.onNavigate(dir === 'left' ? 'prev' : 'next') })
     btn.on('pointerup',   (e) => e.stopPropagation())
 
     return btn
   }
 
-  private buildCloseButton(): Container {
-    const btn = new Container()
-    btn.x = CLOSE_X
-    btn.y = CLOSE_Y
+  private buildDots(): Container {
+    const ct = new Container()
+    ct.eventMode = 'none'
 
-    const bg = new Graphics()
-    bg.circle(0, 0, 18)
-    bg.fill({ color: 0x000000, alpha: 0.45 })
-    bg.circle(0, 0, 18)
-    bg.stroke({ color: 0xffffff, width: 1, alpha: 0.30 })
+    for (let i = 0; i < DOTS; i++) {
+      const dot = new Graphics()
+      dot.eventMode = 'none'
+      this.dotGraphics.push(dot)
+      ct.addChild(dot)
+    }
 
-    const mark = new Graphics()
-    const D = 6
-    mark.moveTo(-D, -D).lineTo(D, D)
-    mark.moveTo(D, -D).lineTo(-D, D)
-    mark.stroke({ color: 0xffffff, width: 1.5, alpha: 0.80, cap: 'round' })
-
-    btn.addChild(bg, mark)
-    btn.eventMode = 'static'
-    btn.cursor    = 'pointer'
-    btn.hitArea   = new Rectangle(-28, -28, 56, 56)
-    btn.on('pointerdown', (e) => { e.stopPropagation(); this.onClose() })
-    return btn
+    this.setActiveDot(0)
+    return ct
   }
 }

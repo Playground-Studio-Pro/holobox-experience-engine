@@ -10,6 +10,7 @@ import { CompositionFocusView } from './CompositionFocusView'
 import { lerp } from '@/utils'
 import { CANVAS_WIDTH } from '@/config/defaults'
 
+
 // Focus position — photo target, centered horizontally
 const FOCUS_HEIGHT   = 1050
 const FOCUS_CENTER_X = 540
@@ -88,7 +89,6 @@ export class FocusController {
     private readonly floating: FloatingMotionSystem,
     private readonly orbitDeco: OrbitDecorationLayer | null,
     private readonly interactionCtrl: InteractionController,
-    private readonly footerName?: string,
   ) {
     this.focusView = new CompositionFocusView(
       () => this.close(),
@@ -101,9 +101,6 @@ export class FocusController {
 
     const source = this.containers[slotIndex]
     if (!source) return
-
-    const playerIdx = currentPlayerIndex ?? slot.playerIndex
-    const player    = this.players[playerIdx]
 
     this.isOpen          = true
     this.isTransitioning = true
@@ -127,7 +124,7 @@ export class FocusController {
     gsap.killTweensOf(source.scale)
 
     // Browse state
-    this.browseIndex    = playerIdx
+    this.browseIndex    = currentPlayerIndex ?? slot.playerIndex
     this.focusScale     = FOCUS_HEIGHT / slot.height
     this.slotRef        = slot
     this.activeDisplay  = source
@@ -183,7 +180,7 @@ export class FocusController {
       delay: ENTER_DELAY, duration: ENTER_DUR, ease: EASE, overwrite: true,
       onComplete: () => {
         this.isTransitioning = false
-        this.focusView.showPanel(player ?? null, this.footerName)
+        this.focusView.showPanel()
       },
     })
   }
@@ -349,9 +346,6 @@ export class FocusController {
     })
 
     this.browseIndex = newIndex
-
-    // Update panel without re-triggering fade animation
-    this.focusView.updatePanel(this.players[newIndex] ?? null, this.footerName)
     this.focusView.setActiveDot(newIndex)
   }
 

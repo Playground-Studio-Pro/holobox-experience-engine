@@ -115,9 +115,8 @@ export function useAmbientMotion(
 
     // ── System 6: Focus Experience ────────────────────────────────────────────
     // Touching a photo opens it in focus. Editorial composition stays underneath.
-    const players     = config.assets?.players ?? []
-    const footerName  = config.footer?.name
-    const focusCtrl   = new FocusController(
+    const players   = config.assets?.players ?? []
+    const focusCtrl = new FocusController(
       scene.getLayer('ui'),
       containers,
       slots,
@@ -125,7 +124,6 @@ export function useAmbientMotion(
       floating,
       orbitDeco,
       interactionCtrl,
-      footerName,
     )
 
     // ── System 7: Living Memory — continuous photo rotation ───────────────────
