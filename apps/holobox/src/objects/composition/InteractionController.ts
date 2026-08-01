@@ -5,35 +5,49 @@ import type { OrbitDecorationLayer } from '@/objects/orbit/OrbitDecorationLayer'
 
 export type PhotoSelectedCallback = (index: number, slot: CompositionSlotConfig) => void
 
-const HOVER_DURATION = 0.12   // 120ms
-const PRESS_DURATION = 0.06   // 60ms — immediate response
-const HOVER_SCALE    = 1.02   // +2%
-const PRESS_SCALE    = 1.05   // +5% lift above slot
-const HOVER_GLOW     = 0.70
-const PRESS_GLOW     = 1.00
+// ── Hover ─────────────────────────────────────────────────────────────────────
+const HOVER_DUR   = 0.18
+const OUT_DUR     = 0.24
+const HOVER_SCALE = 1.02
+const HOVER_GLOW  = 0.58
+
+// ── Press: two-phase compress → lift ─────────────────────────────────────────
+// Phase 1 — compress on contact (physical confirmation)
+const COMPRESS_DUR   = 0.06
+const COMPRESS_SCALE = 0.96
+const COMPRESS_GLOW  = 0.28
+// Pause between compress and lift
+const LIFT_DELAY     = 0.08
+// Phase 2 — lift above slot before focus begins
+const LIFT_DUR       = 0.15
+const LIFT_SCALE     = 1.04
+const LIFT_GLOW      = 0.78
+// Callback fires this far into the lift (photo is visibly rising when focus starts)
+const SELECT_OFFSET  = 0.06
 
 /**
- * Adds hover and press-lift interaction to editorial composition photos.
+ * Adds hover and press interaction to editorial composition photos.
  *
- * - Ghost cards (blur > 0) are never interactive.
- * - Hero and supporting cards are equally touchable — all open Focus.
- * - Slot positions are never mutated. Cards do not exchange slots.
- * - onPhotoSelected fires on pointerdown with the card index and its slot config.
- *   The next Focus ticket wires this to the Focus Experience.
+ * Press sequence: compress (60ms) → 80ms pause → lift → onPhotoSelected fires.
+ * The user feels physical contact at compress, gets confirmation at lift,
+ * then the focus transition takes over — all within ~200ms of touch.
+ *
+ * Ghost cards (blur > 0) are never interactive.
+ * Slot positions are never mutated.
  */
 export class InteractionController {
   private readonly containers: Container[]
   private readonly slots: CompositionSlotConfig[]
   private readonly orbitDeco: OrbitDecorationLayer | null
 
-  // Per-slot hover assets — null for ghost (non-interactive) slots
   private readonly hoverGlows: (Container | null)[] = []
   private readonly shadowRefs: (Container | null)[] = []
   private readonly baseShadowAlphas: number[] = []
   private readonly baseScales: number[] = []
 
-  // Which slots are currently in a pressed state (prevents double-fire)
   private readonly pressedSlots = new Set<number>()
+  // Pending delayed calls — killed in destroy() and on setEnabled(false)
+  private pendingDelays: gsap.core.Tween[] = []
 
   private enabled = true
   private onPhotoSelectedCallback: PhotoSelectedCallback | null = null
@@ -44,28 +58,22 @@ export class InteractionController {
     orbitDeco: OrbitDecorationLayer | null = null,
   ) {
     this.containers = containers
-    this.slots = slots
-    this.orbitDeco = orbitDeco
+    this.slots      = slots
+    this.orbitDeco  = orbitDeco
   }
 
-  /**
-   * Register the callback fired when a touchable photo is selected.
-   * Receives the slot index and its config — source of truth for position,
-   * size, and depth for the Focus Experience to build from.
-   */
   onPhotoSelected(cb: PhotoSelectedCallback): void {
     this.onPhotoSelectedCallback = cb
   }
 
-  /**
-   * Enable or disable all interaction. Disabled during Focus Experience.
-   * Clearing pressedSlots prevents lingering press state when re-enabled.
-   */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled
     if (!enabled) {
       this.pressedSlots.clear()
       this.orbitDeco?.setSlowMotion(false)
+      // Kill pending press delays so no deferred callbacks fire after focus opens
+      for (const d of this.pendingDelays) d.kill()
+      this.pendingDelays = []
     }
   }
 
@@ -74,7 +82,6 @@ export class InteractionController {
       const slot      = this.slots[i]
       const container = this.containers[i]
 
-      // Ghost cards are not interactive
       if (slot.blur) {
         this.hoverGlows.push(null)
         this.shadowRefs.push(null)
@@ -83,8 +90,7 @@ export class InteractionController {
         continue
       }
 
-      // ── Snapshot shadow reference ────────────────────────────────────────────
-      // injectShadow() in useAmbientMotion inserts shadowCt at children[0].
+      // ── Shadow reference (injected at children[0] by useAmbientMotion) ───────
       const shadowCt  = container.children[0] as Container | null
       const hasShadow = shadowCt instanceof Container && (shadowCt.filters?.length ?? 0) > 0
       this.shadowRefs.push(hasShadow ? shadowCt : null)
@@ -97,12 +103,12 @@ export class InteractionController {
 
       const bloom = new Graphics()
       bloom.roundRect(-hw, -hh, slot.width, slot.height, r)
-      bloom.stroke({ color: 0xffffff, width: 10, alpha: 0.35 })
-      bloom.filters = [new BlurFilter({ strength: 8 })]
+      bloom.stroke({ color: 0xffffff, width: 12, alpha: 0.30 })
+      bloom.filters = [new BlurFilter({ strength: 10 })]
 
       const border = new Graphics()
       border.roundRect(-hw, -hh, slot.width, slot.height, r)
-      border.stroke({ color: 0xffffff, width: 2, alpha: 0.85 })
+      border.stroke({ color: 0xffffff, width: 1.5, alpha: 0.80 })
 
       const hoverGlow = new Container()
       hoverGlow.addChild(bloom, border)
@@ -110,10 +116,8 @@ export class InteractionController {
       container.addChild(hoverGlow)
       this.hoverGlows.push(hoverGlow)
 
-      // Snapshot depth scale — set by useAmbientMotion before this mount runs
       this.baseScales.push(container.scale.x)
 
-      // ── Events ───────────────────────────────────────────────────────────────
       container.eventMode = 'static'
       container.cursor    = 'pointer'
 
@@ -128,13 +132,13 @@ export class InteractionController {
 
   private onHover(i: number): void {
     if (!this.enabled) return
-    if (this.pressedSlots.has(i)) return  // stay in press state if still held
+    if (this.pressedSlots.has(i)) return
     const base = this.baseScales[i]
-    gsap.to(this.containers[i].scale, { x: base * HOVER_SCALE, y: base * HOVER_SCALE, duration: HOVER_DURATION, ease: 'power2.out', overwrite: true })
+    gsap.to(this.containers[i].scale, { x: base * HOVER_SCALE, y: base * HOVER_SCALE, duration: HOVER_DUR, ease: 'expo.out', overwrite: true })
     const glow = this.hoverGlows[i]
-    if (glow) gsap.to(glow, { alpha: HOVER_GLOW, duration: HOVER_DURATION, ease: 'power2.out', overwrite: true })
+    if (glow) gsap.to(glow, { alpha: HOVER_GLOW, duration: HOVER_DUR, ease: 'expo.out', overwrite: true })
     const shadow = this.shadowRefs[i]
-    if (shadow) gsap.to(shadow, { alpha: this.baseShadowAlphas[i] * 1.8, duration: HOVER_DURATION, ease: 'power2.out', overwrite: true })
+    if (shadow) gsap.to(shadow, { alpha: this.baseShadowAlphas[i] * 1.6, duration: HOVER_DUR, ease: 'expo.out', overwrite: true })
   }
 
   private onOut(i: number): void {
@@ -142,31 +146,45 @@ export class InteractionController {
     this.pressedSlots.delete(i)
     this.orbitDeco?.setSlowMotion(false)
     const base = this.baseScales[i]
-    gsap.to(this.containers[i].scale, { x: base, y: base, duration: HOVER_DURATION, ease: 'power2.in', overwrite: true })
+    gsap.to(this.containers[i].scale, { x: base, y: base, duration: OUT_DUR, ease: 'power2.inOut', overwrite: true })
     const glow = this.hoverGlows[i]
-    if (glow) gsap.to(glow, { alpha: 0, duration: HOVER_DURATION, ease: 'power2.in', overwrite: true })
+    if (glow) gsap.to(glow, { alpha: 0, duration: OUT_DUR, ease: 'power2.inOut', overwrite: true })
     const shadow = this.shadowRefs[i]
-    if (shadow) gsap.to(shadow, { alpha: this.baseShadowAlphas[i], duration: HOVER_DURATION, ease: 'power2.in', overwrite: true })
+    if (shadow) gsap.to(shadow, { alpha: this.baseShadowAlphas[i], duration: OUT_DUR, ease: 'power2.inOut', overwrite: true })
   }
 
   private onPress(i: number): void {
-    if (!this.enabled) return
-    if (this.pressedSlots.has(i)) return
+    if (!this.enabled || this.pressedSlots.has(i)) return
     this.pressedSlots.add(i)
 
-    // Immediate lift — photograph rises above its slot
-    const base = this.baseScales[i]
-    gsap.to(this.containers[i].scale, { x: base * PRESS_SCALE, y: base * PRESS_SCALE, duration: PRESS_DURATION, ease: 'power2.out', overwrite: true })
-    const glow = this.hoverGlows[i]
-    if (glow) gsap.to(glow, { alpha: PRESS_GLOW, duration: PRESS_DURATION, ease: 'power2.out', overwrite: true })
-    const shadow = this.shadowRefs[i]
-    if (shadow) gsap.to(shadow, { alpha: this.baseShadowAlphas[i] * 2.5, duration: PRESS_DURATION, ease: 'power2.out', overwrite: true })
+    const container = this.containers[i]
+    const base      = this.baseScales[i]
+    const glow      = this.hoverGlows[i]
+    const shadow    = this.shadowRefs[i]
+    const shadowBase = this.baseShadowAlphas[i]
 
-    // Slow ambient orbit during touch response
-    this.orbitDeco?.setSlowMotion(true)
+    // ── Phase 1: compress — immediate physical confirmation ───────────────────
+    gsap.to(container.scale, { x: base * COMPRESS_SCALE, y: base * COMPRESS_SCALE, duration: COMPRESS_DUR, ease: 'power3.out', overwrite: true })
+    if (glow)   gsap.to(glow,   { alpha: COMPRESS_GLOW,             duration: COMPRESS_DUR, ease: 'power2.out', overwrite: true })
+    if (shadow) gsap.to(shadow, { alpha: shadowBase * 2.0,           duration: COMPRESS_DUR, ease: 'power2.out', overwrite: true })
 
-    // Emit selection — Focus ticket wires this to its controller
-    this.onPhotoSelectedCallback?.(i, this.slots[i])
+    // ── Phase 2: lift — 80ms later, confirms gesture ──────────────────────────
+    const liftDelay = gsap.delayedCall(LIFT_DELAY, () => {
+      if (!this.pressedSlots.has(i)) return
+
+      gsap.to(container.scale, { x: base * LIFT_SCALE, y: base * LIFT_SCALE, duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
+      if (glow)   gsap.to(glow,   { alpha: LIFT_GLOW,         duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
+      if (shadow) gsap.to(shadow, { alpha: shadowBase * 2.8,   duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
+
+      this.orbitDeco?.setSlowMotion(true)
+
+      // Fire selection partway into the lift — photo is visibly rising when focus starts
+      const selectDelay = gsap.delayedCall(SELECT_OFFSET, () => {
+        if (this.pressedSlots.has(i)) this.onPhotoSelectedCallback?.(i, this.slots[i])
+      })
+      this.pendingDelays.push(selectDelay)
+    })
+    this.pendingDelays.push(liftDelay)
   }
 
   private onRelease(i: number): void {
@@ -177,12 +195,14 @@ export class InteractionController {
   }
 
   destroy(): void {
+    for (const d of this.pendingDelays) d.kill()
+    this.pendingDelays = []
+
     for (let i = 0; i < this.containers.length; i++) {
       const container = this.containers[i]
       const hoverGlow = this.hoverGlows[i]
       const shadowRef = this.shadowRefs[i]
 
-      // Container may already be destroyed if composition.destroy() ran first
       if (!container.destroyed) {
         container.removeAllListeners()
         container.eventMode = 'none'

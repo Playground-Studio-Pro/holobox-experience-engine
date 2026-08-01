@@ -48,7 +48,7 @@ export class OrbitDecorationLayer {
 
   private speedMultiplier = 1.0
   private targetSpeedMultiplier = 1.0
-  private static readonly SPEED_EASE_RATE = 2.5
+  private static readonly SPEED_EASE_RATE = 1.6
 
   constructor(ellipse: CompositionEllipseConfig, layerSplit: number) {
     this.cx = ellipse.cx

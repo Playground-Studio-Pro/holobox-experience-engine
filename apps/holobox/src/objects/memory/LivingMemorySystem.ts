@@ -7,13 +7,37 @@ import { ShuffleBag } from './ShuffleBag'
 import { lerp } from '@/utils'
 import { CANVAS_WIDTH } from '@/config/defaults'
 
-// Horizontal center of the display — trophy origin
 const STAGE_CX = CANVAS_WIDTH / 2
 
-// Depth scale formula — mirrors useAmbientMotion's scale assignment
 function depthScale(depth: number): number {
   return lerp(0.65, 1.0, depth)
 }
+
+// Per-group transition duration multipliers (applied to config.transitionDuration)
+// Ghost: fast — they're previews, always changing, barely noticed
+// Supporting: medium — discovered on second look
+// Hero: slow — a quiet revelation, felt more than watched
+const GROUP_DUR_MULT: Record<SlotGroup, number> = {
+  ghost:      0.68,
+  supporting: 1.30,
+  hero:       2.10,
+}
+
+// Scale range during transition — very small delta so the change is atmospheric
+const EXIT_SCALE_RATIO  = 0.91  // shrink to 91% while fading (9% is barely visible)
+const ENTRY_SCALE_START = 0.91  // emerge from same scale as exit
+
+// Positional drift toward trophy — small enough to be subliminal
+const ENTRY_OFFSET_PX = 14  // px from trophy direction at entry start
+const EXIT_OFFSET_PX  = 8   // px drift away from trophy on exit
+
+// Easing — sine gives the most organic, gradual, never-mechanical feel
+const EXIT_EASE_POS   = 'sine.in'
+const EXIT_EASE_ALPHA = 'sine.in'
+const EXIT_EASE_SCALE = 'sine.in'
+const ENTER_EASE_POS  = 'sine.out'
+const ENTER_EASE_ALPHA = 'sine.out'
+const ENTER_EASE_SCALE = 'sine.out'
 
 type SlotGroup = 'hero' | 'supporting' | 'ghost'
 
@@ -26,7 +50,6 @@ interface ManagedSlot {
   currentPlayerIndex: number
   timer:              ReturnType<typeof setTimeout> | null
   transitioning:      boolean
-  // direction vector from slot toward stage center (normalized)
   towardCenterX:      number
   towardCenterY:      number
 }
@@ -34,43 +57,42 @@ interface ManagedSlot {
 /**
  * Continuously rotates photographs through editorial composition slots.
  *
- * - Ghost slots cycle fastest (8–12 s), supporting mid (15–20 s), hero slowest (60–90 s).
- * - ShuffleBag guarantees every player appears before any repeats.
- * - Visible player indices are never reassigned to another slot simultaneously.
- * - Transitions animate alpha + scale (exit shrinks, enter grows from trophy direction).
- * - pause() / resume() stop/restart scheduling without losing queue state.
+ * The goal is that observers discover photographs have changed —
+ * never that they watch them change.
  *
- * Does not know anything about golf. Operates on any PlayerData collection.
+ * Transitions are atmospheric: very subtle scale and position shifts
+ * with sine easing. Durations are depth-group dependent:
+ *   Ghost → 68% of base (fast preview cycling)
+ *   Supporting → 130% of base (graceful)
+ *   Hero → 210% of base (quiet revelation)
+ *
+ * pause() / resume() preserve exact queue state across focus sessions.
  */
 export class LivingMemorySystem {
   private readonly managedSlots: ManagedSlot[]
-  private readonly bag: ShuffleBag<number>
-  private readonly exitDur:  number
-  private readonly enterDur: number
-  private paused   = false
+  private readonly bag:          ShuffleBag<number>
+  private readonly baseDur:      number
+  private paused    = false
   private destroyed = false
 
   constructor(
     containers:          Container[],
-    slots:                 CompositionSlotConfig[],
+    slots:               CompositionSlotConfig[],
     private readonly players:  PlayerData[],
     private readonly floating: FloatingMotionSystem,
     private readonly config:   LivingMemoryConfig,
     orbitCenterY:        number,
   ) {
     const playerIndices = players.map((_, i) => i)
-    this.bag = new ShuffleBag(playerIndices)
-
-    const totalDur = config.transitionDuration ?? 0.9
-    this.exitDur  = totalDur * 0.42
-    this.enterDur = totalDur * 0.58
+    this.bag    = new ShuffleBag(playerIndices)
+    this.baseDur = config.transitionDuration ?? 1.0
 
     this.managedSlots = slots.map((slot, i) => {
       const group: SlotGroup = slot.label === 'hero'
         ? 'hero'
         : slot.blur ? 'ghost' : 'supporting'
 
-      const dx  = STAGE_CX  - slot.x
+      const dx  = STAGE_CX    - slot.x
       const dy  = orbitCenterY - slot.y
       const len = Math.sqrt(dx * dx + dy * dy)
 
@@ -92,7 +114,7 @@ export class LivingMemorySystem {
   mount(): void {
     if (!this.config.enabled) return
 
-    // Kick off background texture loading for all players so transitions never stall
+    // Pre-load all player textures so transitions never wait on a network fetch
     for (const player of this.players) {
       if (player.photoUrl) {
         Assets.load(player.photoUrl).catch(() => { /* silent */ })
@@ -108,10 +130,7 @@ export class LivingMemorySystem {
     if (this.paused) return
     this.paused = true
     for (const ms of this.managedSlots) {
-      if (ms.timer !== null) {
-        clearTimeout(ms.timer)
-        ms.timer = null
-      }
+      if (ms.timer !== null) { clearTimeout(ms.timer); ms.timer = null }
     }
   }
 
@@ -165,85 +184,70 @@ export class LivingMemorySystem {
     const nextIndex = this.bag.next(this.visibleIndices())
     if (nextIndex === null) return
 
-    // Claim this index immediately so no other slot draws it concurrently
     ms.currentPlayerIndex = nextIndex
     ms.transitioning      = true
 
     const player = this.players[nextIndex]
-    if (!player?.photoUrl) {
-      ms.transitioning = false
-      this.scheduleNext(ms)
-      return
-    }
+    if (!player?.photoUrl) { ms.transitioning = false; this.scheduleNext(ms); return }
 
     Assets.load<Texture>(player.photoUrl)
       .then((texture) => {
-        if (this.paused || this.destroyed) {
-          // Paused during load — abort cleanly; restore slot to idle state
-          ms.transitioning = false
-          return
-        }
-        this.runTransition(ms, texture, () => {
-          ms.transitioning = false
-          this.scheduleNext(ms)
-        })
+        if (this.paused || this.destroyed) { ms.transitioning = false; return }
+        this.runTransition(ms, texture, () => { ms.transitioning = false; this.scheduleNext(ms) })
       })
-      .catch(() => {
-        ms.transitioning = false
-        this.scheduleNext(ms)
-      })
+      .catch(() => { ms.transitioning = false; this.scheduleNext(ms) })
   }
 
   private runTransition(ms: ManagedSlot, texture: Texture, onComplete: () => void): void {
     const { container, slot, baseScale, towardCenterX, towardCenterY } = ms
-    const proxy   = this.floating.getBaseProxy(container)
+    const proxy = this.floating.getBaseProxy(container)
 
-    // How far toward trophy center the entry starts (pixels in slot local space)
-    const ENTRY_PX = 32
-    const EXIT_PX  = 18
+    const totalDur = this.baseDur * GROUP_DUR_MULT[ms.group]
+    const exitDur  = totalDur * 0.42
+    const enterDur = totalDur * 0.58
 
-    // ── Exit: shrink toward trophy center while fading ────────────────────────
+    // ── Exit: barely moves — fades and drifts away from trophy ───────────────
     if (proxy) {
       gsap.to(proxy, {
-        baseX: slot.x - towardCenterX * EXIT_PX,
-        baseY: slot.y - towardCenterY * EXIT_PX,
-        duration: this.exitDur, ease: 'power2.in', overwrite: true,
+        baseX: slot.x - towardCenterX * EXIT_OFFSET_PX,
+        baseY: slot.y - towardCenterY * EXIT_OFFSET_PX,
+        duration: exitDur, ease: EXIT_EASE_POS, overwrite: true,
       })
     }
-    gsap.to(container, {
-      alpha: 0,
-      duration: this.exitDur, ease: 'power2.in', overwrite: true,
-    })
+    gsap.to(container, { alpha: 0, duration: exitDur, ease: EXIT_EASE_ALPHA, overwrite: true })
     gsap.to(container.scale, {
-      x: baseScale * 0.74, y: baseScale * 0.74,
-      duration: this.exitDur, ease: 'power2.in', overwrite: true,
+      x: baseScale * EXIT_SCALE_RATIO, y: baseScale * EXIT_SCALE_RATIO,
+      duration: exitDur, ease: EXIT_EASE_SCALE, overwrite: true,
       onComplete: () => {
-        if (this.destroyed) return
+        if (this.paused || this.destroyed) {
+          // Aborted mid-transition — snap container back to valid idle state
+          if (!this.destroyed) {
+            container.alpha = slot.alpha
+            container.scale.set(baseScale)
+            if (proxy) { proxy.baseX = slot.x; proxy.baseY = slot.y }
+          }
+          ms.transitioning = false
+          return
+        }
 
-        // ── Swap texture ────────────────────────────────────────────────────
+        // ── Swap ────────────────────────────────────────────────────────────
         this.swapTexture(container, slot, texture)
 
-        // ── Enter: emerge from trophy direction ─────────────────────────────
+        // ── Enter: drifts in from trophy direction ─────────────────────────
         if (proxy) {
-          proxy.baseX = slot.x + towardCenterX * ENTRY_PX
-          proxy.baseY = slot.y + towardCenterY * ENTRY_PX
+          proxy.baseX = slot.x + towardCenterX * ENTRY_OFFSET_PX
+          proxy.baseY = slot.y + towardCenterY * ENTRY_OFFSET_PX
         }
-        container.scale.set(baseScale * 0.74)
+        container.scale.set(baseScale * ENTRY_SCALE_START)
         container.alpha = 0
 
         if (proxy) {
-          gsap.to(proxy, {
-            baseX: slot.x, baseY: slot.y,
-            duration: this.enterDur, ease: 'power2.out', overwrite: true,
-          })
+          gsap.to(proxy, { baseX: slot.x, baseY: slot.y, duration: enterDur, ease: ENTER_EASE_POS, overwrite: true })
         }
-        gsap.to(container, {
-          alpha: slot.alpha,
-          duration: this.enterDur, ease: 'power2.out', overwrite: true,
-        })
+        gsap.to(container, { alpha: slot.alpha, duration: enterDur, ease: ENTER_EASE_ALPHA, overwrite: true })
         gsap.to(container.scale, {
           x: baseScale, y: baseScale,
-          duration: this.enterDur, ease: 'back.out(1.04)', overwrite: true,
+          duration: enterDur, ease: ENTER_EASE_SCALE, overwrite: true,
           onComplete,
         })
       },
@@ -251,25 +255,20 @@ export class LivingMemorySystem {
   }
 
   /**
-   * Swap the sprite texture inside a composition photo container.
-   *
-   * Child hierarchy (set by CompositionPhoto + injectShadow in useAmbientMotion):
+   * Swap sprite texture without recreating any objects.
+   * Navigates the fixed CompositionPhoto + injectShadow child hierarchy:
    *   Non-ghost: container → [shadowCt, photoContainer → [mask, sprite]]
    *   Ghost:     container → [photoContainer → [mask, sprite]]
-   *
-   * Ghost detection: slot.blur is truthy ↔ no shadow was injected.
    */
   private swapTexture(container: Container, slot: CompositionSlotConfig, texture: Texture): void {
     const photoContainerIdx = slot.blur ? 0 : 1
     const photoContainer = container.children[photoContainerIdx] as Container | undefined
     if (!photoContainer) return
 
-    // Sprite lives at index 1, after the mask Graphics at index 0
     const sprite = photoContainer.children[1]
     if (!sprite || !(sprite instanceof Sprite)) return
 
-    const coverScale = Math.max(slot.width / texture.width, slot.height / texture.height)
     sprite.texture = texture
-    sprite.scale.set(coverScale)
+    sprite.scale.set(Math.max(slot.width / texture.width, slot.height / texture.height))
   }
 }

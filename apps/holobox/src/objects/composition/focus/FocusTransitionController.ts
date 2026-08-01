@@ -4,25 +4,26 @@ import { gsap } from 'gsap'
 import { CompositionPhoto } from '@/objects/composition/CompositionPhoto'
 import type { CompositionSlotConfig } from '@/config/types'
 
-const ENTER_DURATION = 0.65
-const EXIT_DURATION  = 0.55
-const EASE           = 'power2.inOut'
+// Cinematic easing — very slow start, sweeps through, deliberate landing
+const EASE         = 'expo.inOut'
+// Travel durations — long enough to feel intentional, not instantaneous
+const ENTER_DUR    = 0.82  // opening: photo lifts toward viewer
+const EXIT_DUR     = 0.72  // closing: memory returns to collection
+// Small delay on enter: lets the press-lift settle before the journey begins
+const ENTER_DELAY  = 0.06
 
 /**
  * Creates a visual duplicate of a composition photo and animates it
  * between its editorial slot position and the Focus view position.
  *
  * The duplicate lives on the ui layer — above all composition content.
- * The original slot photo is hidden (alpha → 0) while the duplicate travels.
+ * expo.inOut easing gives the photo physical weight: reluctant start,
+ * purposeful sweep, precise landing.
  */
 export class FocusTransitionController {
   private photo: CompositionPhoto | null = null
   private root: Container | null = null
 
-  /**
-   * Build the duplicate container at the origin position.
-   * Caller must add the returned container to the ui layer.
-   */
   create(
     texture: Texture,
     slot: CompositionSlotConfig,
@@ -44,7 +45,6 @@ export class FocusTransitionController {
     root.y = originY
     root.scale.set(originScale)
 
-    // Block backdrop tap events while finger is on the photo
     root.eventMode = 'static'
     root.hitArea   = new Rectangle(-slot.width / 2, -slot.height / 2, slot.width, slot.height)
     root.on('pointerdown', (e) => e.stopPropagation())
@@ -54,6 +54,7 @@ export class FocusTransitionController {
     return root
   }
 
+  /** Animate photo from its editorial slot to the focus position. */
   animateTo(
     targetX: number,
     targetY: number,
@@ -61,14 +62,18 @@ export class FocusTransitionController {
     onComplete: () => void,
   ): void {
     if (!this.root) return
-    gsap.to(this.root, { x: targetX, y: targetY, duration: ENTER_DURATION, ease: EASE, overwrite: true })
+    gsap.to(this.root, {
+      x: targetX, y: targetY,
+      delay: ENTER_DELAY, duration: ENTER_DUR, ease: EASE, overwrite: true,
+    })
     gsap.to(this.root.scale, {
       x: targetScale, y: targetScale,
-      duration: ENTER_DURATION, ease: EASE, overwrite: true,
+      delay: ENTER_DELAY, duration: ENTER_DUR, ease: EASE, overwrite: true,
       onComplete,
     })
   }
 
+  /** Animate photo back to its original slot — feels like memory returning. */
   animateBack(
     originX: number,
     originY: number,
@@ -76,10 +81,10 @@ export class FocusTransitionController {
     onComplete: () => void,
   ): void {
     if (!this.root) return
-    gsap.to(this.root, { x: originX, y: originY, duration: EXIT_DURATION, ease: EASE, overwrite: true })
+    gsap.to(this.root, { x: originX, y: originY, duration: EXIT_DUR, ease: EASE, overwrite: true })
     gsap.to(this.root.scale, {
       x: originScale, y: originScale,
-      duration: EXIT_DURATION, ease: EASE, overwrite: true,
+      duration: EXIT_DUR, ease: EASE, overwrite: true,
       onComplete,
     })
   }

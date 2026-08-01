@@ -177,8 +177,8 @@ export class CompositionFocusView {
 
     gsap.killTweensOf(this.panelVisual)
     this.panelVisual.alpha = 0
-    this.panelVisual.y     = 16
-    gsap.to(this.panelVisual, { alpha: 1, y: 0, duration: 0.35, ease: 'power2.out', overwrite: true })
+    this.panelVisual.y     = 22
+    gsap.to(this.panelVisual, { alpha: 1, y: 0, duration: 0.42, ease: 'expo.out', overwrite: true })
   }
 
   hidePanel(onComplete?: () => void): void {
@@ -186,8 +186,8 @@ export class CompositionFocusView {
     this.isVisible = false
     gsap.killTweensOf(this.panelVisual)
     gsap.to(this.panelVisual, {
-      alpha: 0, y: 10,
-      duration: 0.25, ease: 'power2.in', overwrite: true,
+      alpha: 0, y: 12,
+      duration: 0.30, ease: 'power2.in', overwrite: true,
       onComplete,
     })
   }

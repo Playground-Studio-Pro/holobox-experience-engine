@@ -56,8 +56,11 @@ export class FloatingMotionSystem {
 
   constructor(targets: FloatingTarget[]) {
     this.items = targets.map(({ container, depth }) => {
-      // Amplitude scales with depth: hero drifts visibly, ghosts barely move
-      const ampScale = lerp(0.18, 1.0, depth)
+      // Amplitude scales with depth: hero drifts visibly, ghosts barely breathe
+      const ampScale  = lerp(0.18, 1.0, depth)
+      // Frequency scales with depth: closer cards move at full cadence,
+      // far cards have longer, slower cycles — reinforces parallax depth feel
+      const freqScale = lerp(0.72, 1.0, depth)
 
       return {
         container,
@@ -66,12 +69,11 @@ export class FloatingMotionSystem {
         phaseX: Math.random() * TWO_PI,
         phaseY: Math.random() * TWO_PI,
         phaseR: Math.random() * TWO_PI,
-        // Each card has slightly different frequencies — nothing ever syncs
-        freqAx: FREQ_A_MIN + Math.random() * (FREQ_A_MAX - FREQ_A_MIN),
-        freqBx: FREQ_B_MIN + Math.random() * (FREQ_B_MAX - FREQ_B_MIN),
-        freqAy: FREQ_A_MIN + Math.random() * (FREQ_A_MAX - FREQ_A_MIN),
-        freqBy: FREQ_B_MIN + Math.random() * (FREQ_B_MAX - FREQ_B_MIN),
-        freqR:  0.04 + Math.random() * 0.05,
+        freqAx: (FREQ_A_MIN + Math.random() * (FREQ_A_MAX - FREQ_A_MIN)) * freqScale,
+        freqBx: (FREQ_B_MIN + Math.random() * (FREQ_B_MAX - FREQ_B_MIN)) * freqScale,
+        freqAy: (FREQ_A_MIN + Math.random() * (FREQ_A_MAX - FREQ_A_MIN)) * freqScale,
+        freqBy: (FREQ_B_MIN + Math.random() * (FREQ_B_MAX - FREQ_B_MIN)) * freqScale,
+        freqR:  (0.04 + Math.random() * 0.05) * freqScale,
         ampX: (BASE_AMP_X + Math.random() * 1.5) * ampScale,
         ampY: (BASE_AMP_Y + Math.random() * 2.0) * ampScale,
       }

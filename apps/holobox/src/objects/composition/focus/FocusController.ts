@@ -13,9 +13,9 @@ const FOCUS_HEIGHT    = 1050
 const FOCUS_CENTER_X  = 540
 const FOCUS_CENTER_Y  = 610
 
-// Timing for background dimming / restore
-const DIM_DURATION    = 0.40
-const RESTORE_DURATION = 0.35
+// Background dims slowly — the world recedes, not snaps
+const DIM_DURATION     = 0.55
+const RESTORE_DURATION = 0.50
 
 /**
  * Orchestrates the composition Focus Experience.
@@ -83,6 +83,9 @@ export class FocusController {
     // Snapshot all card alphas before modifying anything
     this.backgroundAlphas = this.containers.map((c) => c.alpha)
 
+    // Kill any in-progress scale tweens on the source (e.g. lift from touch)
+    gsap.killTweensOf(source.scale)
+
     // Create duplicate at origin, place on ui layer AFTER focusView so it's on top
     const transitionCtrl = new FocusTransitionController()
     const duplicate = transitionCtrl.create(texture, slot, this.originX, this.originY, this.originScale)
@@ -92,16 +95,16 @@ export class FocusController {
     this.focusView.mount(this.uiLayer)
     this.uiLayer.addChild(duplicate)
 
-    // Dim all background cards; hide the source
+    // World recedes slowly — delay slightly so the duplicate is established first
     for (let i = 0; i < this.containers.length; i++) {
       if (i === slotIndex) {
-        // Source fades out with slight delay so duplicate starts visible above it
-        gsap.to(this.containers[i], { alpha: 0, delay: 0.08, duration: 0.30, ease: 'power2.in', overwrite: true })
+        // Source dissolves after duplicate is placed — seamless hand-off
+        gsap.to(this.containers[i], { alpha: 0, delay: 0.10, duration: 0.38, ease: 'power1.in', overwrite: true })
       } else {
         const target = this.slots[i]?.blur
-          ? this.backgroundAlphas[i] * 0.55
-          : this.backgroundAlphas[i] * 0.38
-        gsap.to(this.containers[i], { alpha: target, duration: DIM_DURATION, ease: 'power2.out', overwrite: true })
+          ? this.backgroundAlphas[i] * 0.50
+          : this.backgroundAlphas[i] * 0.36
+        gsap.to(this.containers[i], { alpha: target, delay: 0.05, duration: DIM_DURATION, ease: 'power1.out', overwrite: true })
       }
     }
 
@@ -122,12 +125,12 @@ export class FocusController {
     this.isOpen          = false
 
     this.focusView.hidePanel(() => {
-      // Restore non-source card alphas as soon as the panel disappears
+      // Restore background cards with gentle ease — world re-enters awareness
       for (let i = 0; i < this.containers.length; i++) {
         if (i !== this.sourceIndex) {
           gsap.to(this.containers[i], {
             alpha: this.backgroundAlphas[i],
-            duration: RESTORE_DURATION, ease: 'power2.out', overwrite: true,
+            duration: RESTORE_DURATION, ease: 'expo.out', overwrite: true,
           })
         }
       }
