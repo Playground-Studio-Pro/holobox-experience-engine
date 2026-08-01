@@ -14,10 +14,12 @@ function depthScale(depth: number): number {
 }
 
 // Per-group transition duration multipliers (applied to config.transitionDuration)
+// Tiny: very fast — subliminal flickers in the deep background
 // Ghost: fast — they're previews, always changing, barely noticed
 // Supporting: medium — discovered on second look
 // Hero: slow — a quiet revelation, felt more than watched
 const GROUP_DUR_MULT: Record<SlotGroup, number> = {
+  tiny:       0.38,
   ghost:      0.68,
   supporting: 1.30,
   hero:       2.10,
@@ -39,7 +41,7 @@ const ENTER_EASE_POS  = 'sine.out'
 const ENTER_EASE_ALPHA = 'sine.out'
 const ENTER_EASE_SCALE = 'sine.out'
 
-type SlotGroup = 'hero' | 'supporting' | 'ghost'
+type SlotGroup = 'hero' | 'supporting' | 'ghost' | 'tiny'
 
 interface ManagedSlot {
   idx:                number
@@ -90,6 +92,7 @@ export class LivingMemorySystem {
     this.managedSlots = slots.map((slot, i) => {
       const group: SlotGroup = slot.label === 'hero'
         ? 'hero'
+        : slot.label?.startsWith('tiny') ? 'tiny'
         : slot.blur ? 'ghost' : 'supporting'
 
       const dx  = STAGE_CX    - slot.x
@@ -165,12 +168,18 @@ export class LivingMemorySystem {
     }, interval * 1000)
   }
 
+  getCurrentPlayerIndex(slotIndex: number): number {
+    return this.managedSlots[slotIndex]?.currentPlayerIndex ?? -1
+  }
+
   private randomInterval(group: SlotGroup): number {
     const { min, max } = group === 'hero'
       ? this.config.heroInterval
       : group === 'supporting'
         ? this.config.supportInterval
-        : this.config.ghostInterval
+        : group === 'tiny'
+          ? (this.config.tinyInterval ?? this.config.ghostInterval)
+          : this.config.ghostInterval
     return min + Math.random() * (max - min)
   }
 

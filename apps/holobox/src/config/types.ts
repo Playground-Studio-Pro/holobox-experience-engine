@@ -197,6 +197,8 @@ export interface LivingMemoryConfig {
   heroInterval: LivingMemoryIntervalConfig
   supportInterval: LivingMemoryIntervalConfig
   ghostInterval: LivingMemoryIntervalConfig
+  /** Cycle interval for tiny/Layer-A cards. Falls back to ghostInterval when absent. */
+  tinyInterval?: LivingMemoryIntervalConfig
   /** Total duration of one replacement (exit + enter), seconds. Default 0.9. */
   transitionDuration?: number
   pauseDuringFocus: boolean

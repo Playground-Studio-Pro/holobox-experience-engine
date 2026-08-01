@@ -2,6 +2,7 @@ import { Container, Assets } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import { gsap } from 'gsap'
 import type { CompositionSlotConfig, PlayerData } from '@/config/types'
+import { lerp } from '@/utils'
 import type { FloatingMotionSystem } from '@/objects/motion/FloatingMotionSystem'
 import type { OrbitDecorationLayer } from '@/objects/orbit/OrbitDecorationLayer'
 import type { InteractionController } from '@/objects/composition/InteractionController'
@@ -59,26 +60,28 @@ export class FocusController {
     this.focusView = new CompositionFocusView(() => this.close())
   }
 
-  open(slotIndex: number, slot: CompositionSlotConfig): void {
+  open(slotIndex: number, slot: CompositionSlotConfig, currentPlayerIndex?: number): void {
     if (this.isOpen || this.isTransitioning) return
 
     const source = this.containers[slotIndex]
     if (!source) return
 
-    // Texture must already be cached — EditorialComposition loads it at mount
-    const player   = this.players[slot.playerIndex]
-    const texture  = player?.photoUrl ? Assets.get<Texture>(player.photoUrl) : null
+    // Resolve to the currently displayed player (LivingMemory may have rotated it)
+    const playerIdx = currentPlayerIndex ?? slot.playerIndex
+    const player    = this.players[playerIdx]
+    const texture   = player?.photoUrl ? Assets.get<Texture>(player.photoUrl) : null
     if (!texture) return
 
-    this.isOpen         = true
+    this.isOpen          = true
     this.isTransitioning = true
-    this.sourceIndex    = slotIndex
+    this.sourceIndex     = slotIndex
 
     // Snapshot base position from FloatingMotionSystem proxy (not live offset)
     const proxy      = this.floating.getBaseProxy(source)
     this.originX     = proxy?.baseX ?? source.x
     this.originY     = proxy?.baseY ?? source.y
-    this.originScale = source.scale.x
+    // Use depth-derived scale — not live scale (which may be at compress/lift state)
+    this.originScale = lerp(0.65, 1.0, slot.depth ?? 0.5)
 
     // Snapshot all card alphas before modifying anything
     this.backgroundAlphas = this.containers.map((c) => c.alpha)

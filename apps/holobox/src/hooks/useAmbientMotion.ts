@@ -138,7 +138,8 @@ export function useAmbientMotion(
 
     interactionCtrl.onPhotoSelected((index, slot) => {
       if (config.livingMemory?.pauseDuringFocus) livingMemory?.pause()
-      focusCtrl.open(index, slot)
+      const currentPlayerIndex = livingMemory?.getCurrentPlayerIndex(index)
+      focusCtrl.open(index, slot, currentPlayerIndex ?? undefined)
     })
 
     focusCtrl.onClosed(() => {

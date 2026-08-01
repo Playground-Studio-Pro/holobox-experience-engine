@@ -157,30 +157,30 @@ export class InteractionController {
     if (!this.enabled || this.pressedSlots.has(i)) return
     this.pressedSlots.add(i)
 
-    const container = this.containers[i]
-    const base      = this.baseScales[i]
-    const glow      = this.hoverGlows[i]
-    const shadow    = this.shadowRefs[i]
+    const container  = this.containers[i]
+    const base       = this.baseScales[i]
+    const glow       = this.hoverGlows[i]
+    const shadow     = this.shadowRefs[i]
     const shadowBase = this.baseShadowAlphas[i]
 
     // ── Phase 1: compress — immediate physical confirmation ───────────────────
     gsap.to(container.scale, { x: base * COMPRESS_SCALE, y: base * COMPRESS_SCALE, duration: COMPRESS_DUR, ease: 'power3.out', overwrite: true })
-    if (glow)   gsap.to(glow,   { alpha: COMPRESS_GLOW,             duration: COMPRESS_DUR, ease: 'power2.out', overwrite: true })
-    if (shadow) gsap.to(shadow, { alpha: shadowBase * 2.0,           duration: COMPRESS_DUR, ease: 'power2.out', overwrite: true })
+    if (glow)   gsap.to(glow,   { alpha: COMPRESS_GLOW,   duration: COMPRESS_DUR, ease: 'power2.out', overwrite: true })
+    if (shadow) gsap.to(shadow, { alpha: shadowBase * 2.0, duration: COMPRESS_DUR, ease: 'power2.out', overwrite: true })
 
-    // ── Phase 2: lift — 80ms later, confirms gesture ──────────────────────────
+    // ── Phase 2: lift — 80ms later ────────────────────────────────────────────
     const liftDelay = gsap.delayedCall(LIFT_DELAY, () => {
-      if (!this.pressedSlots.has(i)) return
+      // Lift animation only plays if finger is still held — quick taps skip it
+      if (this.pressedSlots.has(i)) {
+        gsap.to(container.scale, { x: base * LIFT_SCALE, y: base * LIFT_SCALE, duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
+        if (glow)   gsap.to(glow,   { alpha: LIFT_GLOW,         duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
+        if (shadow) gsap.to(shadow, { alpha: shadowBase * 2.8,   duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
+        this.orbitDeco?.setSlowMotion(true)
+      }
 
-      gsap.to(container.scale, { x: base * LIFT_SCALE, y: base * LIFT_SCALE, duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
-      if (glow)   gsap.to(glow,   { alpha: LIFT_GLOW,         duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
-      if (shadow) gsap.to(shadow, { alpha: shadowBase * 2.8,   duration: LIFT_DUR, ease: 'power2.out', overwrite: true })
-
-      this.orbitDeco?.setSlowMotion(true)
-
-      // Fire selection partway into the lift — photo is visibly rising when focus starts
+      // Selection callback always fires — taps of any duration open focus
       const selectDelay = gsap.delayedCall(SELECT_OFFSET, () => {
-        if (this.pressedSlots.has(i)) this.onPhotoSelectedCallback?.(i, this.slots[i])
+        this.onPhotoSelectedCallback?.(i, this.slots[i])
       })
       this.pendingDelays.push(selectDelay)
     })

@@ -130,6 +130,72 @@
         "radius": 12,
         "layer": "back",
         "depth": 0.22
+      },
+      {
+        "label": "ghost-3",
+        "playerIndex": 6,
+        "x": 108, "y": 800,
+        "width": 118, "height": 148,
+        "alpha": 0.20,
+        "blur": 4.0,
+        "radius": 12,
+        "layer": "back",
+        "depth": 0.18
+      },
+      {
+        "label": "ghost-4",
+        "playerIndex": 7,
+        "x": 972, "y": 840,
+        "width": 112, "height": 140,
+        "alpha": 0.17,
+        "blur": 4.5,
+        "radius": 12,
+        "layer": "back",
+        "depth": 0.15
+      },
+      {
+        "label": "ghost-5",
+        "playerIndex": 8,
+        "x": 450, "y": 1290,
+        "width": 122, "height": 153,
+        "alpha": 0.22,
+        "blur": 3.8,
+        "radius": 12,
+        "layer": "front",
+        "depth": 0.20
+      },
+      {
+        "label": "tiny-1",
+        "playerIndex": 9,
+        "x": 90, "y": 285,
+        "width": 74, "height": 92,
+        "alpha": 0.12,
+        "blur": 7.5,
+        "radius": 10,
+        "layer": "back",
+        "depth": 0.07
+      },
+      {
+        "label": "tiny-2",
+        "playerIndex": 10,
+        "x": 988, "y": 325,
+        "width": 68, "height": 85,
+        "alpha": 0.10,
+        "blur": 8.0,
+        "radius": 10,
+        "layer": "back",
+        "depth": 0.06
+      },
+      {
+        "label": "tiny-3",
+        "playerIndex": 11,
+        "x": 545, "y": 1608,
+        "width": 80, "height": 100,
+        "alpha": 0.13,
+        "blur": 7.0,
+        "radius": 10,
+        "layer": "front",
+        "depth": 0.08
       }
     ]
   },
@@ -137,7 +203,8 @@
     "enabled": true,
     "heroInterval":    { "min": 60, "max": 90 },
     "supportInterval": { "min": 15, "max": 20 },
-    "ghostInterval":   { "min": 8,  "max": 12 },
+    "ghostInterval":   { "min": 6,  "max": 10 },
+    "tinyInterval":    { "min": 4,  "max": 7  },
     "transitionDuration": 0.9,
     "pauseDuringFocus": true
   },
