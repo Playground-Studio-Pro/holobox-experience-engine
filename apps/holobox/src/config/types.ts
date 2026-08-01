@@ -187,6 +187,21 @@ export interface EditorialCompositionConfig {
   ellipse?: CompositionEllipseConfig
 }
 
+export interface LivingMemoryIntervalConfig {
+  min: number
+  max: number
+}
+
+export interface LivingMemoryConfig {
+  enabled: boolean
+  heroInterval: LivingMemoryIntervalConfig
+  supportInterval: LivingMemoryIntervalConfig
+  ghostInterval: LivingMemoryIntervalConfig
+  /** Total duration of one replacement (exit + enter), seconds. Default 0.9. */
+  transitionDuration?: number
+  pauseDuringFocus: boolean
+}
+
 export interface ProjectConfig {
   experience: string
   version: string
@@ -201,4 +216,5 @@ export interface ProjectConfig {
   decorations?: DecorationsConfig
   footer?: FooterConfig
   composition?: EditorialCompositionConfig
+  livingMemory?: LivingMemoryConfig
 }

@@ -11,6 +11,7 @@ import { OrbitDecorationLayer } from '@/objects/orbit/OrbitDecorationLayer'
 import { TrophyHalo } from '@/objects/effects/TrophyHalo'
 import { InteractionController } from '@/objects/composition/InteractionController'
 import { FocusController } from '@/objects/composition/focus/FocusController'
+import { LivingMemorySystem } from '@/objects/memory/LivingMemorySystem'
 import { lerp } from '@/utils'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
@@ -128,8 +129,20 @@ export function useAmbientMotion(
       footerName,
     )
 
+    // ── System 7: Living Memory — continuous photo rotation ───────────────────
+    const orbitCenterY = config.orbit.centerY ?? CANVAS_HEIGHT / 2
+    const livingMemory = config.livingMemory
+      ? new LivingMemorySystem(containers, slots, players, floating, config.livingMemory, orbitCenterY)
+      : null
+    livingMemory?.mount()
+
     interactionCtrl.onPhotoSelected((index, slot) => {
+      if (config.livingMemory?.pauseDuringFocus) livingMemory?.pause()
       focusCtrl.open(index, slot)
+    })
+
+    focusCtrl.onClosed(() => {
+      if (config.livingMemory?.pauseDuringFocus) livingMemory?.resume()
     })
 
     // ── Unified ticker ────────────────────────────────────────────────────────
@@ -143,6 +156,7 @@ export function useAmbientMotion(
 
     return () => {
       renderer.ticker.remove(onTick)
+      livingMemory?.destroy()
       focusCtrl.destroy()
       interactionCtrl.destroy()
       floating.destroy()

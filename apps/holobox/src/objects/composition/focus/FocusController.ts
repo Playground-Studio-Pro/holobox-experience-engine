@@ -28,8 +28,9 @@ const RESTORE_DURATION = 0.35
  * Slot positions are never mutated.
  */
 export class FocusController {
-  private isOpen        = false
+  private isOpen          = false
   private isTransitioning = false
+  private onClosedCallback: (() => void) | null = null
 
   private sourceIndex = 0
   private originX     = 0
@@ -39,6 +40,11 @@ export class FocusController {
 
   private transitionCtrl: FocusTransitionController | null = null
   private readonly focusView: CompositionFocusView
+
+  /** Register a callback fired once the close animation fully completes. */
+  onClosed(cb: () => void): void {
+    this.onClosedCallback = cb
+  }
 
   constructor(
     private readonly uiLayer: Container,
@@ -141,6 +147,7 @@ export class FocusController {
 
           this.isTransitioning = false
           this.interactionCtrl.setEnabled(true)
+          this.onClosedCallback?.()
         },
       )
     })

@@ -133,6 +133,14 @@
       }
     ]
   },
+  "livingMemory": {
+    "enabled": true,
+    "heroInterval":    { "min": 60, "max": 90 },
+    "supportInterval": { "min": 15, "max": 20 },
+    "ghostInterval":   { "min": 8,  "max": 12 },
+    "transitionDuration": 0.9,
+    "pauseDuringFocus": true
+  },
   "assets": {
     "photos": [],
     "players": [
