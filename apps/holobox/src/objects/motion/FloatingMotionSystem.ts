@@ -41,6 +41,7 @@ interface FloatingItem {
   freqR: number
   ampX: number
   ampY: number
+  frozen?: boolean
 }
 
 /**
@@ -85,6 +86,32 @@ export class FloatingMotionSystem {
     this.targetAmplitudeScale = scale
   }
 
+  /**
+   * Freeze a container — snaps it to its base position and excludes it from
+   * the per-tick update. Used when reparenting a photo to the focus layer so
+   * GSAP can animate its position without interference.
+   */
+  freezeItem(container: Container): void {
+    const item = this.items.find(i => i.container === container)
+    if (!item) return
+    item.frozen        = true
+    container.x        = item.baseX
+    container.y        = item.baseY
+    container.rotation = 0
+  }
+
+  /**
+   * Unfreeze a container and reset its base position.
+   * Call after returning the photo to its slot so floating resumes cleanly.
+   */
+  unfreezeItem(container: Container, baseX: number, baseY: number): void {
+    const item = this.items.find(i => i.container === container)
+    if (!item) return
+    item.baseX  = baseX
+    item.baseY  = baseY
+    item.frozen = false
+  }
+
   update(ticker: Ticker): void {
     const dt = ticker.deltaMS / 1000
     this.elapsed += dt
@@ -96,6 +123,8 @@ export class FloatingMotionSystem {
     const a = this.amplitudeScale
 
     for (const item of this.items) {
+      if (item.frozen) continue
+
       const dx =
         (Math.sin(t * item.freqAx + item.phaseX) * item.ampX +
          Math.sin(t * item.freqBx + item.phaseX + 0.9) * (item.ampX * 0.38)) * a

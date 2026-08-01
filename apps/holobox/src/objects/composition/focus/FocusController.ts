@@ -1,48 +1,57 @@
-import { Container, Assets } from 'pixi.js'
-import type { Texture } from 'pixi.js'
+import { Container } from 'pixi.js'
+import type { FederatedPointerEvent } from 'pixi.js'
 import { gsap } from 'gsap'
 import type { CompositionSlotConfig, PlayerData } from '@/config/types'
-import { lerp } from '@/utils'
 import type { FloatingMotionSystem } from '@/objects/motion/FloatingMotionSystem'
 import type { OrbitDecorationLayer } from '@/objects/orbit/OrbitDecorationLayer'
 import type { InteractionController } from '@/objects/composition/InteractionController'
-import { FocusTransitionController } from './FocusTransitionController'
 import { CompositionFocusView } from './CompositionFocusView'
+import { lerp } from '@/utils'
 
-// Photo target: 55% of canvas height, centered horizontally
-const FOCUS_HEIGHT    = 1050
-const FOCUS_CENTER_X  = 540
-const FOCUS_CENTER_Y  = 610
+// Photo target — 55% of canvas height, centered horizontally
+const FOCUS_HEIGHT   = 1050
+const FOCUS_CENTER_X = 540
+const FOCUS_CENTER_Y = 610
+
+// Cinematic easing — very slow start, sweeps through, deliberate landing
+const EASE       = 'expo.inOut'
+const ENTER_DUR  = 0.82
+const EXIT_DUR   = 0.72
+const ENTER_DELAY = 0.06
 
 // Background dims slowly — the world recedes, not snaps
 const DIM_DURATION     = 0.55
 const RESTORE_DURATION = 0.50
 
 /**
- * Orchestrates the composition Focus Experience.
+ * Orchestrates the Focus Experience.
  *
- * - open(slotIndex, slot): photo travels from its editorial position
- *   to the focus view. Editorial composition remains underneath.
- * - close(): reverses the animation and restores all ambient motion.
+ * The touched photograph physically leaves the composition:
+ * frozen out of FloatingMotionSystem, reparented to the UI layer,
+ * then GSAP-animated to the focus position. No duplicate. No texture swap.
+ * No fade in/out of the source.
  *
- * EditorialComposition owns idle layout — this controller owns focus state.
- * Slot positions are never mutated.
+ * On close the photograph travels back to its exact slot position,
+ * is reparented to its original layer at its original z-index,
+ * and floating resumes seamlessly.
  */
 export class FocusController {
   private isOpen          = false
   private isTransitioning = false
   private onClosedCallback: (() => void) | null = null
 
-  private sourceIndex = 0
-  private originX     = 0
-  private originY     = 0
-  private originScale = 1
+  private sourceIndex       = 0
+  private originX           = 0
+  private originY           = 0
+  private originScale       = 1
+  private sourceAlpha       = 1
+  private sourceParent: Container | null = null
+  private sourceParentIndex = 0
+  private sourceFocusBlocker: ((e: FederatedPointerEvent) => void) | null = null
   private backgroundAlphas: number[] = []
 
-  private transitionCtrl: FocusTransitionController | null = null
   private readonly focusView: CompositionFocusView
 
-  /** Register a callback fired once the close animation fully completes. */
   onClosed(cb: () => void): void {
     this.onClosedCallback = cb
   }
@@ -66,59 +75,72 @@ export class FocusController {
     const source = this.containers[slotIndex]
     if (!source) return
 
-    // Resolve to the currently displayed player (LivingMemory may have rotated it)
     const playerIdx = currentPlayerIndex ?? slot.playerIndex
     const player    = this.players[playerIdx]
-    const texture   = player?.photoUrl ? Assets.get<Texture>(player.photoUrl) : null
-    if (!texture) return
 
     this.isOpen          = true
     this.isTransitioning = true
     this.sourceIndex     = slotIndex
 
-    // Snapshot base position from FloatingMotionSystem proxy (not live offset)
-    const proxy      = this.floating.getBaseProxy(source)
-    this.originX     = proxy?.baseX ?? source.x
-    this.originY     = proxy?.baseY ?? source.y
-    // Use depth-derived scale — not live scale (which may be at compress/lift state)
-    this.originScale = lerp(0.65, 1.0, slot.depth ?? 0.5)
+    // Freeze floating — snaps source to base position, stops per-tick drift
+    this.floating.freezeItem(source)
 
-    // Snapshot all card alphas before modifying anything
+    // Capture exact slot position (now snapped clean by freezeItem)
+    this.originX     = source.x
+    this.originY     = source.y
+    this.originScale = lerp(0.65, 1.0, slot.depth ?? 0.5)
+    this.sourceAlpha = source.alpha
+
+    // Snapshot background alphas before any dimming
     this.backgroundAlphas = this.containers.map((c) => c.alpha)
 
-    // Kill any in-progress scale tweens on the source (e.g. lift from touch)
+    // Kill any in-progress tweens on source (e.g. compress/lift from touch)
+    gsap.killTweensOf(source)
     gsap.killTweensOf(source.scale)
 
-    // Create duplicate at origin, place on ui layer AFTER focusView so it's on top
-    const transitionCtrl = new FocusTransitionController()
-    const duplicate = transitionCtrl.create(texture, slot, this.originX, this.originY, this.originScale)
-    this.transitionCtrl = transitionCtrl
+    // ── Photo physically leaves the composition ───────────────────────────────
+    this.sourceParent      = source.parent
+    this.sourceParentIndex = source.parent?.getChildIndex(source) ?? 0
+    source.parent?.removeChild(source)
 
-    // focusView (backdrop + panel) goes in first → lower z → behind duplicate photo
+    // focusView (backdrop + panel) mounts first — lower z-order than the photo
     this.focusView.mount(this.uiLayer)
-    this.uiLayer.addChild(duplicate)
+    this.uiLayer.addChild(source)
 
-    // World recedes slowly — delay slightly so the duplicate is established first
+    // Snap scale to origin (clear any lift animation remnant)
+    source.scale.set(this.originScale)
+
+    // Prevent backdrop close when tapping the focus photo
+    const blocker = (e: FederatedPointerEvent) => e.stopPropagation()
+    source.on('pointerdown', blocker)
+    this.sourceFocusBlocker = blocker
+
+    // ── Background recedes ────────────────────────────────────────────────────
     for (let i = 0; i < this.containers.length; i++) {
-      if (i === slotIndex) {
-        // Source dissolves after duplicate is placed — seamless hand-off
-        gsap.to(this.containers[i], { alpha: 0, delay: 0.10, duration: 0.38, ease: 'power1.in', overwrite: true })
-      } else {
-        const target = this.slots[i]?.blur
-          ? this.backgroundAlphas[i] * 0.50
-          : this.backgroundAlphas[i] * 0.36
-        gsap.to(this.containers[i], { alpha: target, delay: 0.05, duration: DIM_DURATION, ease: 'power1.out', overwrite: true })
-      }
+      if (i === slotIndex) continue
+      const target = this.slots[i]?.blur
+        ? this.backgroundAlphas[i] * 0.50
+        : this.backgroundAlphas[i] * 0.36
+      gsap.to(this.containers[i], { alpha: target, delay: 0.05, duration: DIM_DURATION, ease: 'power1.out', overwrite: true })
     }
 
     this.floating.setAmplitudeScale(0.22)
     this.orbitDeco?.setSlowMotion(true)
     this.interactionCtrl.setEnabled(false)
 
+    // ── Photo travels toward viewer ───────────────────────────────────────────
     const focusScale = FOCUS_HEIGHT / slot.height
-    transitionCtrl.animateTo(FOCUS_CENTER_X, FOCUS_CENTER_Y, focusScale, () => {
-      this.isTransitioning = false
-      this.focusView.showPanel(player ?? null, this.footerName)
+    gsap.to(source, {
+      x: FOCUS_CENTER_X, y: FOCUS_CENTER_Y, alpha: 1,
+      delay: ENTER_DELAY, duration: ENTER_DUR, ease: EASE, overwrite: true,
+    })
+    gsap.to(source.scale, {
+      x: focusScale, y: focusScale,
+      delay: ENTER_DELAY, duration: ENTER_DUR, ease: EASE, overwrite: true,
+      onComplete: () => {
+        this.isTransitioning = false
+        this.focusView.showPanel(player ?? null, this.footerName)
+      },
     })
   }
 
@@ -128,45 +150,71 @@ export class FocusController {
     this.isOpen          = false
 
     this.focusView.hidePanel(() => {
-      // Restore background cards with gentle ease — world re-enters awareness
+      const source = this.containers[this.sourceIndex]
+
+      // World re-enters awareness
       for (let i = 0; i < this.containers.length; i++) {
-        if (i !== this.sourceIndex) {
-          gsap.to(this.containers[i], {
-            alpha: this.backgroundAlphas[i],
-            duration: RESTORE_DURATION, ease: 'expo.out', overwrite: true,
-          })
-        }
+        if (i === this.sourceIndex) continue
+        gsap.to(this.containers[i], {
+          alpha: this.backgroundAlphas[i],
+          duration: RESTORE_DURATION, ease: 'expo.out', overwrite: true,
+        })
       }
 
       this.floating.setAmplitudeScale(1.0)
       this.orbitDeco?.setSlowMotion(false)
 
-      this.transitionCtrl?.animateBack(
-        this.originX, this.originY, this.originScale,
-        () => {
-          // Swap duplicate for original — instant, positions are identical
-          this.containers[this.sourceIndex].alpha = this.backgroundAlphas[this.sourceIndex]
-
-          this.transitionCtrl?.destroy()
-          this.transitionCtrl = null
+      // ── Photo returns precisely to its slot ───────────────────────────────
+      gsap.to(source, {
+        x: this.originX, y: this.originY, alpha: this.sourceAlpha,
+        duration: EXIT_DUR, ease: EASE, overwrite: true,
+      })
+      gsap.to(source.scale, {
+        x: this.originScale, y: this.originScale,
+        duration: EXIT_DUR, ease: EASE, overwrite: true,
+        onComplete: () => {
+          this._restoreSource(source)
           this.focusView.unmount()
-
           this.isTransitioning = false
           this.interactionCtrl.setEnabled(true)
           this.onClosedCallback?.()
         },
-      )
+      })
     })
   }
 
   destroy(): void {
-    // Kill any in-progress card tweens
-    for (const c of this.containers) gsap.killTweensOf(c)
+    const source = this.containers[this.sourceIndex]
 
-    this.transitionCtrl?.destroy()
-    this.transitionCtrl = null
+    for (const c of this.containers) {
+      gsap.killTweensOf(c)
+      gsap.killTweensOf(c.scale)
+    }
+
+    if (source && source.parent === this.uiLayer) {
+      this._restoreSource(source)
+    }
+
     this.focusView.destroy()
-    this.isOpen         = false
+    this.isOpen          = false
     this.isTransitioning = false
+  }
+
+  private _restoreSource(source: Container): void {
+    if (this.sourceFocusBlocker) {
+      source.off('pointerdown', this.sourceFocusBlocker)
+      this.sourceFocusBlocker = null
+    }
+
+    if (source.parent === this.uiLayer) {
+      this.uiLayer.removeChild(source)
+    }
+
+    if (this.sourceParent && !this.sourceParent.destroyed) {
+      const maxIdx = this.sourceParent.children.length
+      this.sourceParent.addChildAt(source, Math.min(this.sourceParentIndex, maxIdx))
+    }
+
+    this.floating.unfreezeItem(source, this.originX, this.originY)
   }
 }
