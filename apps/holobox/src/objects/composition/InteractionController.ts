@@ -35,6 +35,7 @@ export class InteractionController {
   // Which slots are currently in a pressed state (prevents double-fire)
   private readonly pressedSlots = new Set<number>()
 
+  private enabled = true
   private onPhotoSelectedCallback: PhotoSelectedCallback | null = null
 
   constructor(
@@ -54,6 +55,18 @@ export class InteractionController {
    */
   onPhotoSelected(cb: PhotoSelectedCallback): void {
     this.onPhotoSelectedCallback = cb
+  }
+
+  /**
+   * Enable or disable all interaction. Disabled during Focus Experience.
+   * Clearing pressedSlots prevents lingering press state when re-enabled.
+   */
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled
+    if (!enabled) {
+      this.pressedSlots.clear()
+      this.orbitDeco?.setSlowMotion(false)
+    }
   }
 
   mount(): void {
@@ -114,6 +127,7 @@ export class InteractionController {
   }
 
   private onHover(i: number): void {
+    if (!this.enabled) return
     if (this.pressedSlots.has(i)) return  // stay in press state if still held
     const base = this.baseScales[i]
     gsap.to(this.containers[i].scale, { x: base * HOVER_SCALE, y: base * HOVER_SCALE, duration: HOVER_DURATION, ease: 'power2.out', overwrite: true })
@@ -124,6 +138,7 @@ export class InteractionController {
   }
 
   private onOut(i: number): void {
+    if (!this.enabled) return
     this.pressedSlots.delete(i)
     this.orbitDeco?.setSlowMotion(false)
     const base = this.baseScales[i]
@@ -135,6 +150,7 @@ export class InteractionController {
   }
 
   private onPress(i: number): void {
+    if (!this.enabled) return
     if (this.pressedSlots.has(i)) return
     this.pressedSlots.add(i)
 
@@ -154,7 +170,7 @@ export class InteractionController {
   }
 
   private onRelease(i: number): void {
-    // Restore orbit, drop back to hover state (pointer is still over the card)
+    if (!this.enabled) return
     this.pressedSlots.delete(i)
     this.orbitDeco?.setSlowMotion(false)
     this.onHover(i)

@@ -1,0 +1,237 @@
+import { Container, Graphics, Rectangle, Text, FillGradient } from 'pixi.js'
+import { gsap } from 'gsap'
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
+import type { PlayerData } from '@/config/types'
+
+const FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif'
+const GOLD = 0xd4af37
+
+// Glass panel dimensions — sits below the focus photo
+const PANEL_W = 860
+const PANEL_H = 290
+const PANEL_X = (CANVAS_WIDTH - PANEL_W) / 2  // 110
+const PANEL_Y = 1185
+const PANEL_R = 20
+
+// Close button — top-right of the panel area
+const CLOSE_X = PANEL_X + PANEL_W - 30
+const CLOSE_Y = PANEL_Y + 30
+
+// Pagination dots — bottom center of panel
+const DOTS       = 5
+const DOT_R      = 4
+const DOT_GAP    = 14
+const DOTS_Y     = PANEL_Y + PANEL_H - 28
+const DOTS_START = CANVAS_WIDTH / 2 - ((DOTS - 1) * DOT_GAP) / 2
+
+/**
+ * Glass metadata panel for the Focus Experience.
+ * Drawn in the ui layer. The panel fades in after the photo travel completes,
+ * and fades out before the return animation begins.
+ *
+ * - Backdrop: full-canvas invisible hit area → tap outside → close
+ * - Panel blocker: prevents backdrop close when tapping panel
+ * - Close button: top-right corner of panel area
+ * - Nav arrows + pagination dots: visual only, no functionality yet
+ */
+export class CompositionFocusView {
+  readonly root: Container
+  private readonly panelVisual: Container
+  private readonly nameText: Text
+  private readonly metaText: Text
+  private isVisible = false
+
+  constructor(private readonly onClose: () => void) {
+    this.root = new Container()
+    this.root.label = 'focus:view'
+
+    // ── Backdrop hit area — full canvas, pointerdown → close ─────────────────
+    const backdrop = new Container()
+    backdrop.eventMode = 'static'
+    backdrop.cursor    = 'default'
+    backdrop.hitArea   = new Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    backdrop.on('pointerdown', () => this.onClose())
+
+    // ── Panel visual (fades in separately) ───────────────────────────────────
+    const panelVisual = new Container()
+    panelVisual.alpha = 0
+
+    // Dark glass base
+    const panelBg = new Graphics()
+    panelBg.roundRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_R)
+    panelBg.fill({ color: 0x0a1020, alpha: 0.80 })
+
+    // Top-to-bottom sheen
+    const sheen = new FillGradient({
+      type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local',
+    })
+    sheen.addColorStop(0,    'rgba(255,255,255,0.07)')
+    sheen.addColorStop(0.30, 'rgba(255,255,255,0.01)')
+    sheen.addColorStop(1,    'rgba(255,255,255,0)')
+    const panelSheen = new Graphics()
+    panelSheen.roundRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_R)
+    panelSheen.fill({ fill: sheen })
+
+    // Top edge highlight
+    const topEdge = new Graphics()
+    topEdge.roundRect(PANEL_X + 1, PANEL_Y + 1, PANEL_W - 2, 3, PANEL_R)
+    topEdge.fill({ color: 0xffffff, alpha: 0.20 })
+
+    // Bottom gold accent line
+    const bottomAccent = new Graphics()
+    bottomAccent.rect(PANEL_X + 40, PANEL_Y + PANEL_H - 1, PANEL_W - 80, 1)
+    bottomAccent.fill({ color: GOLD, alpha: 0.22 })
+
+    // Border
+    const panelBorder = new Graphics()
+    panelBorder.roundRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_R)
+    panelBorder.stroke({ color: 0xffffff, width: 1, alpha: 0.13 })
+
+    panelVisual.addChild(panelBg, panelSheen, topEdge, bottomAccent, panelBorder)
+
+    // ── Player name ──────────────────────────────────────────────────────────
+    const nameText = new Text({
+      text: '',
+      style: {
+        fontFamily: FONT, fontSize: 36, fontWeight: '300',
+        fill: 0xffffff, letterSpacing: 6,
+      },
+    })
+    nameText.anchor.set(0.5, 0)
+    nameText.x = CANVAS_WIDTH / 2
+    nameText.y = PANEL_Y + 32
+    nameText.eventMode = 'none'
+    panelVisual.addChild(nameText)
+    this.nameText = nameText
+
+    // Thin divider line below name
+    const divider = new Graphics()
+    divider.rect(PANEL_X + 60, PANEL_Y + 88, PANEL_W - 120, 1)
+    divider.fill({ color: 0xffffff, alpha: 0.12 })
+    panelVisual.addChild(divider)
+
+    // ── Meta row ─────────────────────────────────────────────────────────────
+    const metaText = new Text({
+      text: '',
+      style: {
+        fontFamily: FONT, fontSize: 14, fontWeight: '400',
+        fill: GOLD, letterSpacing: 3, align: 'center',
+      },
+    })
+    metaText.anchor.set(0.5, 0)
+    metaText.x = CANVAS_WIDTH / 2
+    metaText.y = PANEL_Y + 102
+    metaText.alpha = 0.85
+    metaText.eventMode = 'none'
+    panelVisual.addChild(metaText)
+    this.metaText = metaText
+
+    // ── Navigation arrows (visual only) ──────────────────────────────────────
+    panelVisual.addChild(this.buildArrowGlyph('left',  PANEL_X + 40,        PANEL_Y + PANEL_H / 2 - 10))
+    panelVisual.addChild(this.buildArrowGlyph('right', PANEL_X + PANEL_W - 40, PANEL_Y + PANEL_H / 2 - 10))
+
+    // ── Pagination dots ───────────────────────────────────────────────────────
+    for (let i = 0; i < DOTS; i++) {
+      const dot = new Graphics()
+      const isActive = i === 0
+      dot.circle(DOTS_START + i * DOT_GAP, DOTS_Y, isActive ? DOT_R + 1 : DOT_R)
+      dot.fill({ color: 0xffffff, alpha: isActive ? 0.70 : 0.25 })
+      panelVisual.addChild(dot)
+    }
+
+    this.panelVisual = panelVisual
+
+    // ── Panel interaction blocker — stops backdrop close on panel taps ────────
+    const panelBlocker = new Container()
+    panelBlocker.eventMode = 'static'
+    panelBlocker.hitArea   = new Rectangle(PANEL_X, PANEL_Y, PANEL_W, PANEL_H)
+    panelBlocker.on('pointerdown', (e) => e.stopPropagation())
+
+    // ── Close button ──────────────────────────────────────────────────────────
+    const closeBtn = this.buildCloseButton()
+
+    // Draw order: backdrop → panel visual → panel blocker → close button
+    this.root.addChild(backdrop, panelVisual, panelBlocker, closeBtn)
+  }
+
+  mount(uiLayer: Container): void {
+    uiLayer.addChild(this.root)
+  }
+
+  unmount(): void {
+    this.root.parent?.removeChild(this.root)
+  }
+
+  showPanel(player: PlayerData | null, fallbackName?: string): void {
+    if (this.isVisible) return
+    this.isVisible = true
+
+    const name = player?.name ?? fallbackName ?? ''
+    this.nameText.text = name.toUpperCase()
+
+    const parts: string[] = []
+    if (player?.country) parts.push(player.country.toUpperCase())
+    if (player?.rank !== undefined) parts.push(`#${player.rank}`)
+    else if (parts.length === 0 && fallbackName) parts.push('LPGA · DANA OPEN')
+    this.metaText.text = parts.join('  ·  ')
+
+    gsap.killTweensOf(this.panelVisual)
+    this.panelVisual.alpha = 0
+    this.panelVisual.y     = 16
+    gsap.to(this.panelVisual, { alpha: 1, y: 0, duration: 0.35, ease: 'power2.out', overwrite: true })
+  }
+
+  hidePanel(onComplete?: () => void): void {
+    if (!this.isVisible) { onComplete?.(); return }
+    this.isVisible = false
+    gsap.killTweensOf(this.panelVisual)
+    gsap.to(this.panelVisual, {
+      alpha: 0, y: 10,
+      duration: 0.25, ease: 'power2.in', overwrite: true,
+      onComplete,
+    })
+  }
+
+  destroy(): void {
+    gsap.killTweensOf(this.panelVisual)
+    this.unmount()
+    this.root.destroy({ children: true })
+  }
+
+  private buildArrowGlyph(dir: 'left' | 'right', x: number, y: number): Graphics {
+    const g = new Graphics()
+    if (dir === 'left') {
+      g.moveTo(x + 10, y - 12).lineTo(x - 4, y).lineTo(x + 10, y + 12)
+    } else {
+      g.moveTo(x - 10, y - 12).lineTo(x + 4, y).lineTo(x - 10, y + 12)
+    }
+    g.stroke({ color: 0xffffff, width: 1.5, alpha: 0.30, cap: 'round', join: 'round' })
+    g.eventMode = 'none'
+    return g
+  }
+
+  private buildCloseButton(): Container {
+    const btn = new Container()
+    btn.x = CLOSE_X
+    btn.y = CLOSE_Y
+
+    const bg = new Graphics()
+    bg.circle(0, 0, 18)
+    bg.fill({ color: 0x000000, alpha: 0.45 })
+    bg.circle(0, 0, 18)
+    bg.stroke({ color: 0xffffff, width: 1, alpha: 0.30 })
+
+    const mark = new Graphics()
+    const D = 6
+    mark.moveTo(-D, -D).lineTo(D, D)
+    mark.moveTo(D, -D).lineTo(-D, D)
+    mark.stroke({ color: 0xffffff, width: 1.5, alpha: 0.80, cap: 'round' })
+
+    btn.addChild(bg, mark)
+    btn.eventMode = 'static'
+    btn.cursor    = 'pointer'
+    btn.hitArea   = new Rectangle(-28, -28, 56, 56)
+    btn.on('pointerdown', (e) => { e.stopPropagation(); this.onClose() })
+    return btn
+  }
+}

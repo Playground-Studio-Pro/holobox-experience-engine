@@ -10,6 +10,7 @@ import { AmbientParticleSystem } from '@/objects/particles/AmbientParticleSystem
 import { OrbitDecorationLayer } from '@/objects/orbit/OrbitDecorationLayer'
 import { TrophyHalo } from '@/objects/effects/TrophyHalo'
 import { InteractionController } from '@/objects/composition/InteractionController'
+import { FocusController } from '@/objects/composition/focus/FocusController'
 import { lerp } from '@/utils'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
@@ -109,12 +110,26 @@ export function useAmbientMotion(
     // ── System 5: Composition touch interaction ───────────────────────────────
     // Hero and supporting cards become touchable. Ghost cards are not.
     // Editorial slot positions are never mutated by interaction.
-    // onPhotoSelected fires on press — Focus ticket wires this to FocusController.
     const interactionCtrl = new InteractionController(containers, slots, orbitDeco)
     interactionCtrl.mount()
+
+    // ── System 6: Focus Experience ────────────────────────────────────────────
+    // Touching a photo opens it in focus. Editorial composition stays underneath.
+    const players     = config.assets?.players ?? []
+    const footerName  = config.footer?.name
+    const focusCtrl   = new FocusController(
+      scene.getLayer('ui'),
+      containers,
+      slots,
+      players,
+      floating,
+      orbitDeco,
+      interactionCtrl,
+      footerName,
+    )
+
     interactionCtrl.onPhotoSelected((index, slot) => {
-      // Placeholder — Focus ticket will replace this with FocusController.open(index, slot)
-      console.log('[InteractionController] photo selected', index, slot.label ?? index)
+      focusCtrl.open(index, slot)
     })
 
     // ── Unified ticker ────────────────────────────────────────────────────────
@@ -128,6 +143,7 @@ export function useAmbientMotion(
 
     return () => {
       renderer.ticker.remove(onTick)
+      focusCtrl.destroy()
       interactionCtrl.destroy()
       floating.destroy()
       particles.destroy()

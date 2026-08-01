@@ -2,6 +2,7 @@ import type { Container, Ticker } from 'pixi.js'
 import { lerp } from '@/utils'
 
 const TWO_PI = Math.PI * 2
+const AMP_EASE_RATE = 3.0
 
 // Base amplitudes before depth scaling — very small, almost invisible
 const BASE_AMP_X = 2.0
@@ -50,6 +51,8 @@ interface FloatingItem {
 export class FloatingMotionSystem {
   private readonly items: FloatingItem[]
   private elapsed = 0
+  private amplitudeScale = 1.0
+  private targetAmplitudeScale = 1.0
 
   constructor(targets: FloatingTarget[]) {
     this.items = targets.map(({ container, depth }) => {
@@ -75,23 +78,31 @@ export class FloatingMotionSystem {
     })
   }
 
+  /** Smoothly scale all floating amplitudes — 1.0 = full, 0.0 = frozen. */
+  setAmplitudeScale(scale: number): void {
+    this.targetAmplitudeScale = scale
+  }
+
   update(ticker: Ticker): void {
-    this.elapsed += ticker.deltaMS / 1000
+    const dt = ticker.deltaMS / 1000
+    this.elapsed += dt
+
+    // Smooth amplitude toward target — independent of frame rate
+    this.amplitudeScale = lerp(this.amplitudeScale, this.targetAmplitudeScale, 1 - Math.exp(-AMP_EASE_RATE * dt))
+
     const t = this.elapsed
+    const a = this.amplitudeScale
 
     for (const item of this.items) {
-      // Dual-sine X: dominant + slow secondary at 38% amplitude
       const dx =
-        Math.sin(t * item.freqAx + item.phaseX) * item.ampX +
-        Math.sin(t * item.freqBx + item.phaseX + 0.9) * (item.ampX * 0.38)
+        (Math.sin(t * item.freqAx + item.phaseX) * item.ampX +
+         Math.sin(t * item.freqBx + item.phaseX + 0.9) * (item.ampX * 0.38)) * a
 
-      // Dual-sine Y: similar structure, independent frequencies
       const dy =
-        Math.sin(t * item.freqAy + item.phaseY) * item.ampY +
-        Math.sin(t * item.freqBy + item.phaseY + 1.4) * (item.ampY * 0.32)
+        (Math.sin(t * item.freqAy + item.phaseY) * item.ampY +
+         Math.sin(t * item.freqBy + item.phaseY + 1.4) * (item.ampY * 0.32)) * a
 
-      // Very subtle rotation: max ±0.6°
-      const rotation = Math.sin(t * item.freqR + item.phaseR) * (0.6 * Math.PI / 180)
+      const rotation = Math.sin(t * item.freqR + item.phaseR) * (0.6 * Math.PI / 180) * a
 
       item.container.x = item.baseX + dx
       item.container.y = item.baseY + dy
