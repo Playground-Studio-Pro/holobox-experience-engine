@@ -27,21 +27,20 @@ function injectShadow(
   radius: number,
   depth: number,
 ): void {
-  const shadowAlpha = lerp(0, 0.13, depth)
-  if (shadowAlpha < 0.01) return
+  const shadowAlpha = lerp(0.01, 0.20, depth)
 
   const hw = width / 2
   const hh = height / 2
 
   const shadowGfx = new Graphics()
   shadowGfx.roundRect(-hw, -hh, width, height, radius)
-  shadowGfx.fill({ color: 0x000000, alpha: 0.85 })
+  shadowGfx.fill({ color: 0x000000, alpha: 0.90 })
 
   const shadowCt = new Container()
   shadowCt.addChild(shadowGfx)
-  // Shadow blur scales with depth: hero 80px, far ghost near 0
-  shadowCt.filters = [new BlurFilter({ strength: Math.max(1, lerp(4, 80, depth)) })]
-  shadowCt.y = lerp(8, 26, depth)    // offset: hero drops further, ghost barely moves
+  // Shadow blur scales with depth: hero very diffuse, background cards barely there
+  shadowCt.filters = [new BlurFilter({ strength: Math.max(2, lerp(8, 120, depth)) })]
+  shadowCt.y = lerp(10, 40, depth)   // hero drops dramatically, background barely lifts
   shadowCt.alpha = shadowAlpha
 
   // Insert behind all other children of this container

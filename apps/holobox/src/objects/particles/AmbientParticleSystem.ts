@@ -3,8 +3,6 @@ import type { Ticker } from 'pixi.js'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
 const TWO_PI = Math.PI * 2
-const DEFAULT_COUNT = 30
-const BLUR_FRACTION = 0.30  // 30% large blurred circles, 70% tiny sharp dots
 
 interface Particle {
   gfx: Graphics
@@ -18,60 +16,52 @@ interface Particle {
 }
 
 /**
- * Illuminated dust in a gallery: very slow upward drift, independent alpha breathing.
- * 70% tiny sharp dots; 30% large soft blurred circles in the far background.
- * Quantity fixed at 30 — never more, never fewer.
+ * Three depth layers of illuminated dust — far, mid, near.
+ *
+ * Far layer   — large blurred hazes; very slow drift; barely visible.
+ *               Creates the impression of depth and atmosphere.
+ * Mid layer   — medium soft-blurred motes; moderate speed.
+ *               The gallery "air" between subject and viewer.
+ * Near layer  — tiny sharp specks; fastest drift; brightest.
+ *               Reinforce the sense of a close physical space.
+ *
+ * Different movement speeds per layer create natural parallax.
  */
 export class AmbientParticleSystem {
   readonly container = new Container()
   private readonly particles: Particle[] = []
   private elapsed = 0
 
-  mount(layer: Container, count = DEFAULT_COUNT): void {
-    const blurCount = Math.floor(count * BLUR_FRACTION)
+  mount(layer: Container): void {
+    this._spawnLayer({
+      count:       12,
+      sizeMin:     12, sizeMax:  32,
+      alphaMin:  0.025, alphaMax: 0.065,
+      blurFactor:  1.8,
+      vxRange:     0.10,
+      vyMin:     -0.025, vyMax: -0.065,
+      breatheMin:  0.05, breatheMax: 0.10,   // 63–126s cycle
+    })
 
-    for (let i = 0; i < count; i++) {
-      const isBlurred = i < blurCount
+    this._spawnLayer({
+      count:      12,
+      sizeMin:     2, sizeMax:   7,
+      alphaMin:  0.06, alphaMax: 0.14,
+      blurFactor:  0.9,
+      vxRange:    0.18,
+      vyMin:    -0.045, vyMax: -0.110,
+      breatheMin: 0.09, breatheMax: 0.16,   // 39–70s cycle
+    })
 
-      // Blurred far-background circles are larger and more varied in size
-      const size = isBlurred
-        ? 8 + Math.random() * 18   // 8–26px — large, impressionistic
-        : 0.8 + Math.random() * 1.8  // 0.8–2.6px — crisp, fine
-
-      // Very faint — dust not snow. Blurred circles even fainter (they're larger)
-      const baseAlpha = isBlurred
-        ? 0.04 + Math.random() * 0.07
-        : 0.08 + Math.random() * 0.18
-
-      const gfx = new Graphics()
-      gfx.circle(0, 0, size)
-      gfx.fill({ color: 0xffffff })
-
-      if (isBlurred) {
-        // Heavier blur for background circles — creates real depth variation
-        gfx.filters = [new BlurFilter({ strength: size * 1.6 })]
-      }
-
-      const p: Particle = {
-        gfx,
-        x: Math.random() * CANVAS_WIDTH,
-        y: Math.random() * CANVAS_HEIGHT,
-        // Very slow — drift is felt, not watched. Max 0.3px/s horizontal.
-        vx: (Math.random() - 0.5) * 0.28,
-        vy: -0.04 - Math.random() * 0.12,  // gentle upward float only
-        baseAlpha,
-        // Each particle breathes at its own rate: cycle 28–80 seconds
-        phaseSpeed: 0.08 + Math.random() * 0.15,
-        phase: Math.random() * TWO_PI,
-      }
-
-      gfx.x = p.x
-      gfx.y = p.y
-      gfx.alpha = baseAlpha
-
-      this.particles.push(p)
-      this.container.addChild(gfx)
-    }
+    this._spawnLayer({
+      count:      10,
+      sizeMin:   0.6, sizeMax:   2.0,
+      alphaMin:  0.10, alphaMax: 0.24,
+      blurFactor:  0,                        // sharp — nearest layer
+      vxRange:    0.28,
+      vyMin:    -0.065, vyMax: -0.165,
+      breatheMin: 0.12, breatheMax: 0.22,   // 29–52s cycle
+    })
 
     layer.addChild(this.container)
   }
@@ -84,14 +74,13 @@ export class AmbientParticleSystem {
       p.x += p.vx
       p.y += p.vy
 
-      // Seamless wrap — particles appear continuously without popping
-      if (p.x < -80) p.x = CANVAS_WIDTH + 80
-      if (p.x > CANVAS_WIDTH + 80) p.x = -80
-      if (p.y < -80) p.y = CANVAS_HEIGHT + 80
-      if (p.y > CANVAS_HEIGHT + 80) p.y = -80
+      if (p.x < -80)                  p.x = CANVAS_WIDTH  + 80
+      if (p.x > CANVAS_WIDTH  + 80)   p.x = -80
+      if (p.y < -80)                  p.y = CANVAS_HEIGHT + 80
+      if (p.y > CANVAS_HEIGHT + 80)   p.y = -80
 
-      // Slow breathing alpha — range 50–100% of baseAlpha
-      p.gfx.alpha = p.baseAlpha * (0.50 + 0.50 * Math.sin(this.elapsed * p.phaseSpeed + p.phase))
+      // Breathing alpha — never fully disappears (floor at 40% of base)
+      p.gfx.alpha = p.baseAlpha * (0.40 + 0.60 * Math.sin(this.elapsed * p.phaseSpeed + p.phase))
       p.gfx.x = p.x
       p.gfx.y = p.y
     }
@@ -100,5 +89,46 @@ export class AmbientParticleSystem {
   destroy(): void {
     this.container.destroy({ children: true })
     this.particles.length = 0
+  }
+
+  private _spawnLayer(opts: {
+    count: number
+    sizeMin: number; sizeMax: number
+    alphaMin: number; alphaMax: number
+    blurFactor: number
+    vxRange: number
+    vyMin: number; vyMax: number
+    breatheMin: number; breatheMax: number
+  }): void {
+    for (let i = 0; i < opts.count; i++) {
+      const size = opts.sizeMin + Math.random() * (opts.sizeMax - opts.sizeMin)
+      const baseAlpha = opts.alphaMin + Math.random() * (opts.alphaMax - opts.alphaMin)
+
+      const gfx = new Graphics()
+      gfx.circle(0, 0, size)
+      gfx.fill({ color: 0xffffff })
+
+      if (opts.blurFactor > 0) {
+        gfx.filters = [new BlurFilter({ strength: size * opts.blurFactor })]
+      }
+
+      const p: Particle = {
+        gfx,
+        x: Math.random() * CANVAS_WIDTH,
+        y: Math.random() * CANVAS_HEIGHT,
+        vx: (Math.random() - 0.5) * opts.vxRange * 2,
+        vy: opts.vyMin + Math.random() * (opts.vyMax - opts.vyMin),
+        baseAlpha,
+        phaseSpeed: opts.breatheMin + Math.random() * (opts.breatheMax - opts.breatheMin),
+        phase: Math.random() * TWO_PI,
+      }
+
+      gfx.x = p.x
+      gfx.y = p.y
+      gfx.alpha = baseAlpha
+
+      this.particles.push(p)
+      this.container.addChild(gfx)
+    }
   }
 }

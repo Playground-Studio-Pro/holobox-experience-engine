@@ -4,9 +4,9 @@ import { lerp } from '@/utils'
 const TWO_PI = Math.PI * 2
 const AMP_EASE_RATE = 3.0
 
-// Base amplitudes before depth scaling — very small, almost invisible
-const BASE_AMP_X = 2.0
-const BASE_AMP_Y = 3.2
+// Base amplitudes before depth scaling — subtle but perceptible on hero cards
+const BASE_AMP_X = 2.6
+const BASE_AMP_Y = 4.0
 
 // Frequency ranges (rad/s) — very slow for organic, suspension-in-air feel
 // At 0.08 rad/s one cycle takes ~78 seconds

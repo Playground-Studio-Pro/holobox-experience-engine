@@ -9,10 +9,12 @@ const TWO_PI = Math.PI * 2
 const TRAIL_DOTS = 9
 const TRAIL_STEP = 0.022  // radians between dots
 
-// Orbit ellipse breathing: alpha 0.05 → 0.10 → 0.05 over 11 seconds
-const ELLIPSE_ALPHA_MID = 0.075
-const ELLIPSE_ALPHA_AMP = 0.025
-const ELLIPSE_BREATHE_PERIOD = 11
+// Orbit ellipse breathing: dual-frequency for an organic, never-mechanical feel
+const ELLIPSE_ALPHA_MID  = 0.080
+const ELLIPSE_ALPHA_AMP  = 0.028   // primary amplitude
+const ELLIPSE_ALPHA_AMP2 = 0.012   // secondary (42% of primary, incommensurate period)
+const ELLIPSE_BREATHE_PERIOD  = 11
+const ELLIPSE_BREATHE_PERIOD2 = 19  // ≈ 1.73× primary — avoids repetition for minutes
 
 interface Spark {
   container: Container
@@ -130,11 +132,12 @@ export class OrbitDecorationLayer {
     const smoothFactor = 1 - Math.exp(-OrbitDecorationLayer.SPEED_EASE_RATE * dt)
     this.speedMultiplier = lerp(this.speedMultiplier, this.targetSpeedMultiplier, smoothFactor)
 
-    // ── Ellipse breathing ──────────────────────────────────────────────────────
+    // ── Ellipse breathing — dual frequency for organic, never-mechanical feel ──
     if (this.ellipseGfx) {
       this.ellipseGfx.alpha =
         ELLIPSE_ALPHA_MID +
-        ELLIPSE_ALPHA_AMP * Math.sin(this.elapsed * (TWO_PI / ELLIPSE_BREATHE_PERIOD))
+        ELLIPSE_ALPHA_AMP  * Math.sin(this.elapsed * (TWO_PI / ELLIPSE_BREATHE_PERIOD)) +
+        ELLIPSE_ALPHA_AMP2 * Math.sin(this.elapsed * (TWO_PI / ELLIPSE_BREATHE_PERIOD2))
     }
 
     // ── Sparks ─────────────────────────────────────────────────────────────────
