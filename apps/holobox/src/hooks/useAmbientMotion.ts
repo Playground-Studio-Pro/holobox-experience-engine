@@ -10,7 +10,6 @@ import { AmbientParticleSystem } from '@/objects/particles/AmbientParticleSystem
 import { OrbitDecorationLayer } from '@/objects/orbit/OrbitDecorationLayer'
 import { TrophyHalo } from '@/objects/effects/TrophyHalo'
 import { InteractionController } from '@/objects/composition/InteractionController'
-import { HeroTransitionController } from '@/objects/composition/HeroTransitionController'
 import { lerp } from '@/utils'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
@@ -56,13 +55,13 @@ export function useAmbientMotion(
   config: ProjectConfig,
 ): void {
   useEffect(() => {
-    const renderer = rendererRef.current
-    const scene = sceneRef.current
+    const renderer    = rendererRef.current
+    const scene       = sceneRef.current
     const composition = compositionRef.current
     if (!sceneReady || !orbitReady || !renderer || !scene || !composition) return
     if (!config.composition?.enabled) return
 
-    const slots = config.composition.slots
+    const slots      = config.composition.slots
     const containers = composition.getPhotoContainers()
 
     // ── Depth processing: scale + shadow ──────────────────────────────────────
@@ -94,9 +93,9 @@ export function useAmbientMotion(
     particles.mount(scene.getLayer('effects'))
 
     // ── System 3: Orbit ellipse (breathing) + sparks + comet ─────────────────
-    const ellipse = config.composition.ellipse
+    const ellipse    = config.composition.ellipse
     const layerSplit = (config.centerpiece.layerSplit ?? 0.5) * CANVAS_HEIGHT
-    const orbitDeco = ellipse
+    const orbitDeco  = ellipse
       ? new OrbitDecorationLayer(ellipse, layerSplit)
       : null
     orbitDeco?.mount(scene.getLayer('orbitBack'), scene.getLayer('orbitFront'))
@@ -104,21 +103,19 @@ export function useAmbientMotion(
     // ── System 4: Trophy halo ─────────────────────────────────────────────────
     const haloX = CANVAS_WIDTH / 2
     const haloY = config.orbit.centerY ?? CANVAS_HEIGHT / 2
-    const halo = new TrophyHalo(haloX, haloY, 480)
+    const halo  = new TrophyHalo(haloX, haloY, 480)
     halo.mount(scene.getLayer('orbitBack'))
 
-    // ── System 5: Composition interaction — hover + hero transitions ──────────
-    const interactionCtrl = new InteractionController(containers, slots)
+    // ── System 5: Composition touch interaction ───────────────────────────────
+    // Hero and supporting cards become touchable. Ghost cards are not.
+    // Editorial slot positions are never mutated by interaction.
+    // onPhotoSelected fires on press — Focus ticket wires this to FocusController.
+    const interactionCtrl = new InteractionController(containers, slots, orbitDeco)
     interactionCtrl.mount()
-
-    const heroTransition = new HeroTransitionController(
-      containers,
-      slots,
-      floating,
-      orbitDeco,
-      interactionCtrl,
-    )
-    interactionCtrl.onSlotClick((index) => heroTransition.triggerSwap(index))
+    interactionCtrl.onPhotoSelected((index, slot) => {
+      // Placeholder — Focus ticket will replace this with FocusController.open(index, slot)
+      console.log('[InteractionController] photo selected', index, slot.label ?? index)
+    })
 
     // ── Unified ticker ────────────────────────────────────────────────────────
     const onTick = (ticker: Ticker) => {
@@ -132,7 +129,6 @@ export function useAmbientMotion(
     return () => {
       renderer.ticker.remove(onTick)
       interactionCtrl.destroy()
-      heroTransition.destroy()
       floating.destroy()
       particles.destroy()
       orbitDeco?.destroy()
