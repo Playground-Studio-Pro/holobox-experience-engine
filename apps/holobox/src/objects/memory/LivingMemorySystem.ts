@@ -265,13 +265,26 @@ export class LivingMemorySystem {
 
   /**
    * Swap sprite texture without recreating any objects.
-   * Navigates the fixed CompositionPhoto + injectShadow child hierarchy:
-   *   Non-ghost: container → [shadowCt, photoContainer → [mask, sprite]]
-   *   Ghost:     container → [photoContainer → [mask, sprite]]
+   * Locates the masked photoContainer inside the CompositionPhoto hierarchy
+   * regardless of whether a shadow container is present above it.
+   *
+   * CompositionPhoto always sets photoContainer.mask — that's the distinguishing
+   * property. When shadows are injected (injectShadow), the shadow container has
+   * a BlurFilter but no mask, so iterating children and finding the first masked
+   * child is robust to both states.
+   *
+   *   With shadow:    container → [shadowCt (filter, no mask), photoContainer (mask) → [mask, sprite]]
+   *   Without shadow: container → [photoContainer (mask) → [mask, sprite]]
    */
   private swapTexture(container: Container, slot: CompositionSlotConfig, texture: Texture): void {
-    const photoContainerIdx = slot.blur ? 0 : 1
-    const photoContainer = container.children[photoContainerIdx] as Container | undefined
+    // Find the photoContainer by its mask — works with or without an injected shadow.
+    let photoContainer: Container | undefined
+    for (const child of container.children) {
+      if ((child as Container).mask != null) {
+        photoContainer = child as Container
+        break
+      }
+    }
     if (!photoContainer) return
 
     const sprite = photoContainer.children[1]

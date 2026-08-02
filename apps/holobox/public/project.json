@@ -7,7 +7,7 @@
     "model": "/assets/models/trophy.glb",
     "dev": {
       "showPlaceholder": false,
-      "showGlorifier": true,
+      "showGlorifier": false,
       "showSafeZone": false
     }
   },
@@ -53,9 +53,13 @@
     }
   },
   "footer": {
-    "label": "TORNEO 2026",
-    "name": "GABY LÓPEZ",
-    "meta": "LPGA · DANA OPEN"
+    "name": "Club de Golf México, México",
+    "meta": "3 - 6 August 2026",
+    "sponsor": {
+      "asset": "/projects/golf/assets/ui/logos/jungle.png",
+      "scale": 0.35,
+      "opacity": 1.0
+    }
   },
   "composition": {
     "enabled": true,
@@ -112,7 +116,7 @@
       {
         "label": "ghost-1",
         "playerIndex": 4,
-        "x": 500, "y": 440,
+        "x": 357, "y": 440,
         "width": 145, "height": 182,
         "alpha": 0.28,
         "blur": 3.0,

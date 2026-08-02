@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { Container, Graphics, BlurFilter } from 'pixi.js'
 import type { Ticker } from 'pixi.js'
 import type { Scene } from '@/scene'
 import type { Renderer } from '@/renderer'
@@ -15,37 +14,6 @@ import { LivingMemorySystem } from '@/objects/memory/LivingMemorySystem'
 import { lerp } from '@/utils'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
-/**
- * Injects a soft drop shadow into a photo container.
- * Shadow lives as child[0] — behind the photo — and follows it automatically
- * as FloatingMotionSystem moves the container.
- */
-function injectShadow(
-  container: Container,
-  width: number,
-  height: number,
-  radius: number,
-  depth: number,
-): void {
-  const shadowAlpha = lerp(0.01, 0.20, depth)
-
-  const hw = width / 2
-  const hh = height / 2
-
-  const shadowGfx = new Graphics()
-  shadowGfx.roundRect(-hw, -hh, width, height, radius)
-  shadowGfx.fill({ color: 0x000000, alpha: 0.90 })
-
-  const shadowCt = new Container()
-  shadowCt.addChild(shadowGfx)
-  // Shadow blur scales with depth: hero very diffuse, background cards barely there
-  shadowCt.filters = [new BlurFilter({ strength: Math.max(2, lerp(8, 120, depth)) })]
-  shadowCt.y = lerp(10, 40, depth)   // hero drops dramatically, background barely lifts
-  shadowCt.alpha = shadowAlpha
-
-  // Insert behind all other children of this container
-  container.addChildAt(shadowCt, 0)
-}
 
 export function useAmbientMotion(
   rendererRef: React.RefObject<Renderer | null>,
@@ -76,10 +44,10 @@ export function useAmbientMotion(
       // Depth-driven container scale — hero at 1.0, far ghost at 0.65
       container.scale.set(lerp(0.65, 1.0, depth))
 
-      // Drop shadow — only on non-blurred cards (ghost cards are already blurred)
-      if (!slot.blur) {
-        injectShadow(container, slot.width, slot.height, slot.radius ?? 14, depth)
-      }
+      // shadows disabled — analyzing remaining artifacts
+      // if (!slot.blur) {
+      //   injectShadow(container, slot.width, slot.height, slot.radius ?? 14, depth)
+      // }
     })
 
     // ── System 1: Floating motion ─────────────────────────────────────────────

@@ -39,6 +39,16 @@ export interface OrbitConfig {
   centerY?: number
   /** When false, the card renders photo-only: no name, country, score, or footer background. Default true. */
   showCardFooter?: boolean
+  /** Minimum alpha at the back of the orbit. Default 0.40. */
+  minAlpha?: number
+  /** Maximum alpha at the front of the orbit. Default 1.0. */
+  maxAlpha?: number
+  /** Minimum scale at the back of the orbit. Default 0.65. */
+  minScale?: number
+  /** Maximum scale at the front of the orbit. Default 1.0. */
+  maxScale?: number
+  /** Non-uniform starting angles (radians) per card. Length must equal itemCount. */
+  anchorAngles?: number[]
 }
 
 export interface ThemeConfig {
@@ -128,6 +138,12 @@ export interface FooterConfig {
   x?: number
   /** Canvas Y for the baseline of the meta line. Default CANVAS_HEIGHT - 100. */
   y?: number
+  /** Optional sponsor/partner logo rendered at the bottom-right corner. */
+  sponsor?: {
+    asset: string
+    scale?: number
+    opacity?: number
+  }
 }
 
 // ── Editorial Composition ─────────────────────────────────────────────────────
@@ -219,4 +235,6 @@ export interface ProjectConfig {
   footer?: FooterConfig
   composition?: EditorialCompositionConfig
   livingMemory?: LivingMemoryConfig
+  /** PixiJS renderer resolution. 1 = native pixels (default). 2 = HiDPI/retina. */
+  renderResolution?: number
 }

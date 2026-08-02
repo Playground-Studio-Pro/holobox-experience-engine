@@ -49,6 +49,10 @@ export class InteractionController {
   // Pending delayed calls — killed in destroy() and on setEnabled(false)
   private pendingDelays: gsap.core.Tween[] = []
 
+  // Discovery cue — pulsing ring on hero slot, auto-fades after 4 s
+  private discoveryCue: Container | null = null
+  private discoveryCueTweens: gsap.core.Tween[] = []
+
   private enabled = true
   private onPhotoSelectedCallback: PhotoSelectedCallback | null = null
 
@@ -128,6 +132,34 @@ export class InteractionController {
       container.on('pointerup',        () => this.onRelease(idx))
       container.on('pointerupoutside', () => this.onOut(idx))
     }
+
+    // ── Discovery cue: pulsing ring on hero slot, fades after 4 s ────────────
+    const heroIdx = this.slots.findIndex((s) => s.label === 'hero')
+    if (heroIdx >= 0 && !this.slots[heroIdx].blur) {
+      const hs = this.slots[heroIdx]
+      const hw = hs.width / 2
+      const hh = hs.height / 2
+      const r  = hs.radius ?? 14
+
+      const ring = new Graphics()
+      ring.roundRect(-hw - 6, -hh - 6, hs.width + 12, hs.height + 12, r + 6)
+      ring.stroke({ color: 0xffffff, width: 2.5, alpha: 0.75 })
+
+      const cue = new Container()
+      cue.addChild(ring)
+      cue.alpha = 0
+      this.containers[heroIdx].addChild(cue)
+      this.discoveryCue = cue
+
+      // Pulse twice then fade out completely at 4 s
+      const t1 = gsap.to(cue, { alpha: 0.9, duration: 0.6, ease: 'sine.out', delay: 0.5 })
+      const t2 = gsap.to(cue, { alpha: 0.15, duration: 0.5, ease: 'sine.in', delay: 1.3 })
+      const t3 = gsap.to(cue, { alpha: 0.9, duration: 0.6, ease: 'sine.out', delay: 2.0 })
+      const t4 = gsap.to(cue, { alpha: 0, duration: 0.8, ease: 'sine.in', delay: 2.8,
+        onComplete: () => { if (!cue.destroyed) cue.destroy({ children: true }); this.discoveryCue = null }
+      })
+      this.discoveryCueTweens.push(t1, t2, t3, t4)
+    }
   }
 
   private onHover(i: number): void {
@@ -197,6 +229,14 @@ export class InteractionController {
   destroy(): void {
     for (const d of this.pendingDelays) d.kill()
     this.pendingDelays = []
+
+    // Kill discovery cue tweens and container
+    for (const t of this.discoveryCueTweens) t.kill()
+    this.discoveryCueTweens = []
+    if (this.discoveryCue && !this.discoveryCue.destroyed) {
+      this.discoveryCue.destroy({ children: true })
+    }
+    this.discoveryCue = null
 
     for (let i = 0; i < this.containers.length; i++) {
       const container = this.containers[i]

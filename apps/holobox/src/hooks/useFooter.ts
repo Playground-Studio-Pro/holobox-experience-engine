@@ -12,10 +12,14 @@ export function useFooter(
     const scene = sceneRef.current
     if (!sceneReady || !scene || !footer) return
 
+    let active = true
     const layer = new FooterLayer()
-    layer.mount(scene.getLayer('ui'), footer)
+    layer.mount(scene.getLayer('ui'), footer).catch((err) => {
+      if (active) console.error('[useFooter] mount failed', err)
+    })
 
     return () => {
+      active = false
       layer.destroy()
     }
   }, [sceneRef, sceneReady])

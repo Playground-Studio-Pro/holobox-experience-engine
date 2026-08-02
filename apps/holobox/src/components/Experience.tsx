@@ -19,14 +19,17 @@ interface Props {
 export default function Experience({ config }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const { rendererRef, ready } = useRenderer(containerRef)
+  const { rendererRef, ready } = useRenderer(containerRef, config.renderResolution)
   const { sceneRef, sceneReady } = useScene(rendererRef, ready)
   const cpRef = useCenterPiece(sceneRef, sceneReady, config.centerpiece)
-  useModeToggle(cpRef)
+  useModeToggle(cpRef, sceneRef, sceneReady)
   useDecorations(sceneRef, sceneReady, config.decorations)
   const { engineRef: orbitEngineRef, orbitReady } = useOrbit(rendererRef, sceneRef, sceneReady, config)
-  const { machineRef, focusedIndexRef } = useInteraction(rendererRef, orbitEngineRef, orbitReady)
-  useGallery(sceneRef, machineRef, focusedIndexRef, orbitReady, config)
+  // Orbit interaction and gallery are only active when composition mode is off.
+  // When composition.enabled, orbit items are hidden and these systems are dead paths.
+  const orbitInteractionReady = orbitReady && !config.composition?.enabled
+  const { machineRef, focusedIndexRef } = useInteraction(rendererRef, orbitEngineRef, orbitInteractionReady)
+  useGallery(sceneRef, machineRef, focusedIndexRef, orbitInteractionReady, config)
   useFooter(sceneRef, sceneReady, config.footer)
   const compositionRef = useEditorialComposition(sceneRef, orbitEngineRef, sceneReady, orbitReady, config)
   useAmbientMotion(rendererRef, sceneRef, compositionRef, sceneReady, orbitReady, config)

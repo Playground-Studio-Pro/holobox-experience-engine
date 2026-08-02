@@ -451,3 +451,18 @@ Engine is now fully configuration-driven. `project.json` is served statically an
 `PlayerData` interface defined in `config/types.ts`: `name`, `country`, `rank`, `score`, `photoUrl` — all optional for graceful degradation. `AssetsConfig.players?: PlayerData[]` added alongside the existing `photos` array. `OrbitEngineConfig.players?: PlayerData[]` added. `useOrbit` passes `assets.players` to the engine. When `players` is non-empty, the engine reads `photoUrl` per player and loads textures; when empty, falls back to the flat `photos` array. Both `project.json` files updated with empty `players: []` ready for real data.
 
 **Next:** 0010-B — populate `assets.players` with real golf photos and player metadata.
+
+------------------------------------------------------------------------
+
+# Demo Stabilization — 2026-08-02
+
+**Status:** Build verified. Hardware test pending.
+
+- TypeScript errors resolved (unused `injectShadow` and `BlurFilter` imports removed)
+- Production build passes (`tsc -b && vite build` — no errors)
+- Dead runtime paths disabled: orbit `InteractionEngine` and `GridGallery` skip mount when `composition.enabled` is true
+- `ghost-1` slot moved from x:500 to x:357 — center now outside trophy safe zone (431–649)
+- `ShuffleBag` early-refill fix was already present — no change needed
+- Spatial progression (depth drift on transition) was already implemented in `runTransition()` — no change needed
+- Interaction discovery cue added to `InteractionController`: pulsing ring on hero slot, fades at 4 s, destroyed on cleanup
+- `renderResolution` field added to `ProjectConfig`; `useRenderer` reads it from config (default: 1)

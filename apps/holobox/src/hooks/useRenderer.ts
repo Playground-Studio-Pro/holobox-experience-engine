@@ -3,14 +3,7 @@ import { Renderer } from '@/renderer'
 import type { RendererConfig } from '@/renderer'
 import { env } from '@/config/env'
 
-const CONFIG: RendererConfig = {
-  width: env.canvasWidth,
-  height: env.canvasHeight,
-  antialias: true,
-  resolution: window.devicePixelRatio || 1,
-}
-
-export function useRenderer(containerRef: React.RefObject<HTMLDivElement>) {
+export function useRenderer(containerRef: React.RefObject<HTMLDivElement>, resolution?: number) {
   const rendererRef = useRef<Renderer | null>(null)
   const [ready, setReady] = useState(false)
 
@@ -18,7 +11,13 @@ export function useRenderer(containerRef: React.RefObject<HTMLDivElement>) {
     const container = containerRef.current
     if (!container) return
 
-    const renderer = new Renderer(CONFIG)
+    const config: RendererConfig = {
+      width: env.canvasWidth,
+      height: env.canvasHeight,
+      antialias: true,
+      resolution: resolution ?? 1,
+    }
+    const renderer = new Renderer(config)
     rendererRef.current = renderer
     let active = true
     let initialized = false

@@ -1,14 +1,16 @@
-import { Container, Text, Graphics } from 'pixi.js'
+import { Container, Text, Graphics, Sprite, Assets } from 'pixi.js'
 import type { FooterConfig } from '@/config/types'
-import { CANVAS_HEIGHT } from '@/config/defaults'
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
 const DEFAULT_X = 60
 const DEFAULT_Y = CANVAS_HEIGHT - 100
 
+const SPONSOR_MARGIN_X = 60
+
 export class FooterLayer {
   readonly container = new Container()
 
-  mount(layer: Container, config: FooterConfig): void {
+  async mount(layer: Container, config: FooterConfig): Promise<void> {
     const x = config.x ?? DEFAULT_X
     const baseY = config.y ?? DEFAULT_Y
 
@@ -33,19 +35,18 @@ export class FooterLayer {
         text: config.name,
         style: {
           fontFamily: 'Georgia, "Times New Roman", serif',
-          fontSize: 52,
-          fontWeight: 'bold',
+          fontSize: 28,
+          fontWeight: 'normal',
           fill: 0x111111,
           letterSpacing: 1,
         },
       })
       name.x = x
-      name.y = baseY - 90
+      name.y = baseY - 52
       this.container.addChild(name)
     }
 
     if (config.name) {
-      // Thin rule between name and meta
       const rule = new Graphics()
       rule.moveTo(x, baseY - 24)
       rule.lineTo(x + 200, baseY - 24)
@@ -67,6 +68,24 @@ export class FooterLayer {
       meta.x = x
       meta.y = baseY - 14
       this.container.addChild(meta)
+    }
+
+    if (config.sponsor?.asset) {
+      try {
+        const texture = await Assets.load(config.sponsor.asset)
+        const sprite  = new Sprite(texture)
+        // anchor(1,1) → x/y mark the bottom-right corner of the sprite.
+        // We set y = baseY + 6 so the logo bottom aligns with the meta text bottom
+        // (meta top = baseY - 14, meta height ≈ 20px → bottom ≈ baseY + 6).
+        sprite.anchor.set(1, 1)
+        sprite.x = CANVAS_WIDTH - SPONSOR_MARGIN_X
+        sprite.y = baseY + 6
+        if (config.sponsor.scale   !== undefined) sprite.scale.set(config.sponsor.scale)
+        if (config.sponsor.opacity !== undefined) sprite.alpha = config.sponsor.opacity
+        this.container.addChild(sprite)
+      } catch (err) {
+        console.warn('[FooterLayer] Failed to load sponsor asset', config.sponsor.asset, err)
+      }
     }
 
     layer.addChild(this.container)

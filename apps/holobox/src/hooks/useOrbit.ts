@@ -35,6 +35,11 @@ export function useOrbit(
       layerSplit: (config.centerpiece.layerSplit ?? 0.5) * CANVAS_HEIGHT,
       players: assets?.players ?? [],
       photos: assets?.photos ?? [],
+      minAlpha: orbit.minAlpha,
+      maxAlpha: orbit.maxAlpha,
+      minScale: orbit.minScale,
+      maxScale: orbit.maxScale,
+      anchorAngles: orbit.anchorAngles,
     })
 
     engineRef.current = engine

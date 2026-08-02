@@ -2,33 +2,44 @@ import { Container, Graphics, Rectangle } from 'pixi.js'
 import { gsap } from 'gsap'
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/config/defaults'
 
-// Photo area reference — arrows align with the photo centre
-const FOCUS_CENTER_Y = 610
+// Photo area — must match FocusController constants
+const FOCUS_CENTER_Y  = 610
+const FOCUS_HALF_H    = 525   // FOCUS_HEIGHT / 2 = 1050 / 2
 
-// Arrow glyphs — positioned at canvas edges, clear of any photo size
-const ARROW_Y     = FOCUS_CENTER_Y
-const ARROW_L_X   = 58
-const ARROW_R_X   = CANVAS_WIDTH - 58
-const ARROW_ALPHA = 0.55
+// Arrow buttons — at photo vertical centre, flanking the photo
+const ARROW_Y   = FOCUS_CENTER_Y
+const ARROW_L_X = 58
+const ARROW_R_X = CANVAS_WIDTH - 58
 
-// Pagination dots — just below the focus photo bottom (525px below centre)
+// Pagination dots — just below the photo bottom
 const DOTS       = 5
-const DOT_R      = 3
-const DOT_GAP    = 12
-const DOTS_Y     = FOCUS_CENTER_Y + 525 + 32
+const DOT_R      = 4
+const DOT_GAP    = 14
+const DOTS_Y     = FOCUS_CENTER_Y + FOCUS_HALF_H + 44
 const DOTS_START = CANVAS_WIDTH / 2 - ((DOTS - 1) * DOT_GAP) / 2
+
+// Close button — centered, below dots
+const CLOSE_Y = DOTS_Y + 84
+
+// Shared button style — dark pill with white glyph
+const BTN_R      = 38   // circle radius
+const BTN_BG_CLR = 0x111111
+const BTN_BG_A   = 0.58
+const BTN_ICN    = 0xffffff
+const BTN_ICN_A  = 0.92
+const BTN_STR    = 3    // stroke width for glyphs
 
 // Swipe detection
 const SWIPE_THRESHOLD = 50
 
 /**
- * Minimal focus overlay: two navigation arrows + pagination dots.
+ * Focus overlay: navigation arrows, pagination dots, and close button.
  *
- * Everything else — metadata panel, close button, decorative frames — removed.
- * The photograph is the hero. The interface is invisible.
+ * All interactive elements use dark circular backgrounds so they remain
+ * visible on any background colour (including white).
  *
- * Close: tap anywhere outside the photograph (backdrop handles it).
- * Navigate: tap arrows, swipe backdrop, or keyboard (handled by FocusController).
+ * Close: tap the × button or tap anywhere outside the photograph.
+ * Navigate: tap arrows, swipe the backdrop, or keyboard (FocusController).
  */
 export class CompositionFocusView {
   readonly root: Container
@@ -43,7 +54,7 @@ export class CompositionFocusView {
     this.root = new Container()
     this.root.label = 'focus:view'
 
-    // ── Backdrop — fullscreen. Tap (no swipe) → close. Swipe → navigate. ─────
+    // ── Backdrop — fullscreen tap-to-close / swipe-to-navigate ───────────────
     let swipeStartX = 0
     const backdrop = new Container()
     backdrop.eventMode = 'static'
@@ -59,17 +70,18 @@ export class CompositionFocusView {
       }
     })
 
-    // ── UI group: arrows + dots. Fades in after photo settles. ───────────────
+    // ── UI group: arrows + dots + close. Fades in after photo settles. ────────
     const uiGroup = new Container()
     uiGroup.alpha = 0
 
     uiGroup.addChild(this.buildArrow('left'))
     uiGroup.addChild(this.buildArrow('right'))
     uiGroup.addChild(this.buildDots())
+    uiGroup.addChild(this.buildCloseButton())
 
     this.uiGroup = uiGroup
 
-    // z-order: backdrop (bottom) → uiGroup (arrows + dots on top)
+    // z-order: backdrop → ui controls on top
     this.root.addChild(backdrop, uiGroup)
   }
 
@@ -104,8 +116,8 @@ export class CompositionFocusView {
       const dot = this.dotGraphics[i]
       const isActive = i === activePos
       dot.clear()
-      dot.circle(DOTS_START + i * DOT_GAP, DOTS_Y, isActive ? DOT_R + 1 : DOT_R)
-      dot.fill({ color: 0xffffff, alpha: isActive ? 0.60 : 0.20 })
+      dot.circle(DOTS_START + i * DOT_GAP, DOTS_Y, isActive ? DOT_R + 1.5 : DOT_R)
+      dot.fill({ color: BTN_ICN, alpha: isActive ? 0.85 : 0.30 })
     }
   }
 
@@ -115,22 +127,33 @@ export class CompositionFocusView {
     this.root.destroy({ children: true })
   }
 
+  // ── Private builders ────────────────────────────────────────────────────────
+
   private buildArrow(dir: 'left' | 'right'): Container {
-    const x   = dir === 'left' ? ARROW_L_X : ARROW_R_X
-    const btn = new Container()
+    const x = dir === 'left' ? ARROW_L_X : ARROW_R_X
+
+    const bg = new Graphics()
+    bg.circle(x, ARROW_Y, BTN_R)
+    bg.fill({ color: BTN_BG_CLR, alpha: BTN_BG_A })
 
     const g = new Graphics()
+    const arm = 13
     if (dir === 'left') {
-      g.moveTo(x + 10, ARROW_Y - 14).lineTo(x - 6, ARROW_Y).lineTo(x + 10, ARROW_Y + 14)
+      g.moveTo(x + arm * 0.5, ARROW_Y - arm)
+        .lineTo(x - arm * 0.5, ARROW_Y)
+        .lineTo(x + arm * 0.5, ARROW_Y + arm)
     } else {
-      g.moveTo(x - 10, ARROW_Y - 14).lineTo(x + 6, ARROW_Y).lineTo(x - 10, ARROW_Y + 14)
+      g.moveTo(x - arm * 0.5, ARROW_Y - arm)
+        .lineTo(x + arm * 0.5, ARROW_Y)
+        .lineTo(x - arm * 0.5, ARROW_Y + arm)
     }
-    g.stroke({ color: 0xffffff, width: 2, alpha: ARROW_ALPHA, cap: 'round', join: 'round' })
+    g.stroke({ color: BTN_ICN, width: BTN_STR, alpha: BTN_ICN_A, cap: 'round', join: 'round' })
 
-    btn.addChild(g)
+    const btn = new Container()
+    btn.addChild(bg, g)
     btn.eventMode = 'static'
     btn.cursor    = 'pointer'
-    btn.hitArea   = new Rectangle(x - 36, ARROW_Y - 44, 72, 88)
+    btn.hitArea   = new Rectangle(x - BTN_R - 8, ARROW_Y - BTN_R - 8, (BTN_R + 8) * 2, (BTN_R + 8) * 2)
     btn.on('pointerdown', (e) => { e.stopPropagation(); this.onNavigate(dir === 'left' ? 'prev' : 'next') })
     btn.on('pointerup',   (e) => e.stopPropagation())
 
@@ -150,5 +173,30 @@ export class CompositionFocusView {
 
     this.setActiveDot(0)
     return ct
+  }
+
+  private buildCloseButton(): Container {
+    const x = CANVAS_WIDTH / 2
+    const y = CLOSE_Y
+    const arm = 11
+
+    const bg = new Graphics()
+    bg.circle(x, y, BTN_R)
+    bg.fill({ color: BTN_BG_CLR, alpha: BTN_BG_A })
+
+    const g = new Graphics()
+    g.moveTo(x - arm, y - arm).lineTo(x + arm, y + arm)
+    g.moveTo(x + arm, y - arm).lineTo(x - arm, y + arm)
+    g.stroke({ color: BTN_ICN, width: BTN_STR, alpha: BTN_ICN_A, cap: 'round' })
+
+    const btn = new Container()
+    btn.addChild(bg, g)
+    btn.eventMode = 'static'
+    btn.cursor    = 'pointer'
+    btn.hitArea   = new Rectangle(x - BTN_R - 8, y - BTN_R - 8, (BTN_R + 8) * 2, (BTN_R + 8) * 2)
+    btn.on('pointerdown', (e) => { e.stopPropagation(); this.onClose() })
+    btn.on('pointerup',   (e) => e.stopPropagation())
+
+    return btn
   }
 }

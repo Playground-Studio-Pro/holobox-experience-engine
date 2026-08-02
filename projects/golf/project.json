@@ -37,10 +37,19 @@
     "targetScale": 3.0,
     "closeButtonY": 730
   },
+  "footer": {
+    "name": "Club de Golf México, México",
+    "meta": "3 - 6 August 2026",
+    "sponsor": {
+      "asset": "/projects/golf/assets/ui/logos/jungle.png",
+      "scale": 0.35,
+      "opacity": 1.0
+    }
+  },
   "decorations": {
     "enabled": true,
     "top": {
-      "asset": "/projects/golf/logo-gaby.png",
+      "asset": "/projects/golf/assets/ui/logos/logo-gaby.png",
       "scale": 0.20,
       "offsetY": -100,
       "opacity": 1.0

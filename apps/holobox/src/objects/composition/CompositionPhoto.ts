@@ -14,11 +14,13 @@ export class CompositionPhoto {
   private readonly photoContainer: Container
   private readonly w: number
   private readonly h: number
+  private readonly blurStrength: number
   private sprite: Sprite | null = null
 
   constructor(opts: CompositionPhotoOptions) {
     this.w = opts.width
     this.h = opts.height
+    this.blurStrength = opts.blur ?? 0
 
     const hw = opts.width / 2
     const hh = opts.height / 2
@@ -36,10 +38,6 @@ export class CompositionPhoto {
 
     this.container.addChild(photoContainer)
     this.container.alpha = opts.alpha ?? 1
-
-    if (opts.blur && opts.blur > 0) {
-      this.container.filters = [new BlurFilter({ strength: opts.blur })]
-    }
   }
 
   setTexture(texture: Texture): void {
@@ -56,6 +54,13 @@ export class CompositionPhoto {
     const sprite = new Sprite(texture)
     sprite.anchor.set(0.5)
     sprite.scale.set(coverScale)
+
+    if (this.blurStrength > 0) {
+      const filter = new BlurFilter({ strength: this.blurStrength, quality: 4 })
+      filter.padding = Math.ceil(this.blurStrength * 4)
+      sprite.filters = [filter]
+    }
+
     this.photoContainer.addChild(sprite)
     this.sprite = sprite
   }

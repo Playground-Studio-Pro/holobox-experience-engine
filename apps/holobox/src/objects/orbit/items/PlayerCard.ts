@@ -226,17 +226,74 @@ export class PlayerCard extends OrbitItem {
     this.avatarPlaceholder.visible = false
   }
 
-  override swapTexture(tex: Texture): void {
+  override swapTexture(tex: Texture, seed = 0): void {
     if (!this.photoSprite) {
       this.setTexture(tex)
       return
     }
-    gsap.to(this.photoSprite, {
-      alpha: 0, duration: 0.25, ease: 'power2.in', overwrite: true,
+
+    // ── Procedural timing (Part 4) ─────────────────────────────────────────
+    // All durations are derived from the incoming photo's seed so the
+    // installation never repeats exactly the same transition twice.
+    const h    = (n: number) => ((seed * 2654435761 + n * 2246822519) >>> 0) / 0xffffffff
+    const exitDur  = 0.55 + h(1) * 0.30   // 550–850 ms
+    const trailDur = 0.14 + h(2) * 0.12   // 140–260 ms (brief ghost)
+    const fadeDur  = 0.45 + h(3) * 0.35   // 450–800 ms
+    const blurDur  = 0.60 + h(4) * 0.50   // 600–1100 ms
+    const scaleDur = 0.70 + h(5) * 0.50   // 700–1200 ms
+
+    // ── Spatial handoff — exit (Part 3) ────────────────────────────────────
+    // Old photo recedes: it shrinks, loses focus, dims, and fades.
+    // The viewer perceives it as moving away into depth, not as a cut.
+    const exit = this.photoSprite
+    gsap.killTweensOf(exit)
+    gsap.killTweensOf(exit.scale)
+
+    const exitBlur = new BlurFilter({ strength: 0, quality: 3 })
+    exitBlur.padding = 28
+    exit.filters = [exitBlur]
+
+    const exitCoverScale = exit.scale.x
+    gsap.to(exit.scale, {
+      x: exitCoverScale * 0.91, y: exitCoverScale * 0.91,
+      duration: exitDur, ease: 'sine.in',
+    })
+    gsap.to(exitBlur,  { strength: 4, duration: exitDur, ease: 'sine.in' })
+    // Brief ghost phase before final fade
+    gsap.to(exit, {
+      alpha: 0.08, duration: trailDur, ease: 'power2.out',
       onComplete: () => {
-        this.setTexture(tex)
-        gsap.to(this.photoSprite!, { alpha: 1, duration: 0.35, ease: 'power2.out', overwrite: true })
+        gsap.to(exit, {
+          alpha: 0, duration: exitDur * 0.55, ease: 'power2.in',
+          onComplete: () => { exit.parent?.removeChild(exit); exit.destroy() },
+        })
       },
+    })
+
+    // ── Spatial handoff — enter (Part 3, 5) ─────────────────────────────────
+    // New photo appears as if coming from slightly behind the trophy:
+    // smaller, blurred, dim — then recovers to full presence.
+    // Null the pointer so setTexture creates a new Sprite (old sprite remains
+    // as a separate child and fades out independently).
+    this.photoSprite = null
+    this.setTexture(tex)
+    const incoming    = this.photoSprite!
+    const coverScale  = incoming.scale.x
+
+    // Entry state: slightly behind (smaller) and dim
+    incoming.alpha = 0
+    incoming.scale.set(coverScale * 0.91)
+
+    // Progressive focus — photo acquires sharpness as it "approaches"
+    const entryBlur = new BlurFilter({ strength: 5, quality: 3 })
+    entryBlur.padding = 28
+    incoming.filters = [entryBlur]
+
+    gsap.to(incoming,       { alpha: 1,      duration: fadeDur,  ease: 'power2.out' })
+    gsap.to(incoming.scale, { x: coverScale, y: coverScale, duration: scaleDur, ease: 'power2.out' })
+    gsap.to(entryBlur, {
+      strength: 0, duration: blurDur, ease: 'power2.out',
+      onComplete: () => { incoming.filters = [] },
     })
   }
 

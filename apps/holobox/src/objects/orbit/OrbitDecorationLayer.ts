@@ -1,4 +1,4 @@
-import { Container, Graphics, BlurFilter } from 'pixi.js'
+import { Container, Graphics } from 'pixi.js'
 import type { Ticker } from 'pixi.js'
 import type { CompositionEllipseConfig } from '@/config/types'
 import { lerp } from '@/utils'
@@ -76,47 +76,21 @@ export class OrbitDecorationLayer {
     backLayer.addChild(ell)
     this.ellipseGfx = ell
 
-    // ── 2 sparks: warm gold glow + bright inner dot ───────────────────────────
+    // TEST C1: spark core only — no blur, no comet
     const sparkDefs = [
       { speed: 0.52, phase: Math.random() * TWO_PI, maxAlpha: 0.82 },
       { speed: 0.34, phase: Math.random() * TWO_PI, maxAlpha: 0.65 },
     ]
-
     for (const def of sparkDefs) {
-      // Outer soft bloom — larger and warmer than before
-      const bloom = new Graphics()
-      bloom.circle(0, 0, 14)
-      bloom.fill({ color: 0xffaa44, alpha: 0.75 })
-      bloom.filters = [new BlurFilter({ strength: 16 })]
-
-      // Tight inner glow
-      const mid = new Graphics()
-      mid.circle(0, 0, 6)
-      mid.fill({ color: 0xffe0a0, alpha: 0.9 })
-      mid.filters = [new BlurFilter({ strength: 5 })]
-
-      // Sharp core
       const core = new Graphics()
       core.circle(0, 0, 3)
       core.fill({ color: 0xffffff })
-
       const c = new Container()
-      c.addChild(bloom, mid, core)
+      c.addChild(core)
       frontLayer.addChild(c)
-
       this.sparks.push({ container: c, angle: def.phase, speed: def.speed, maxAlpha: def.maxAlpha })
     }
-
-    // ── 1 comet: head + 9 tail dots, warmer color ────────────────────────────
-    for (let i = 0; i < TRAIL_DOTS; i++) {
-      const size = i === 0 ? 3.5 : Math.max(0.6, 3.2 - i * 0.28)
-      const gfx = new Graphics()
-      gfx.circle(0, 0, size)
-      gfx.fill({ color: i === 0 ? 0xffe0a0 : 0xffffff })
-      if (i === 0) gfx.filters = [new BlurFilter({ strength: 7 })]
-      frontLayer.addChild(gfx)
-      this.cometDots.push(gfx)
-    }
+    // comet: disabled
   }
 
   /** Smoothly reduce orbit decoration speed to ~25% during a hero transition. */
